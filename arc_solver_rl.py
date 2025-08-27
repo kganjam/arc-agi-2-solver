@@ -16,7 +16,8 @@ import hashlib
 
 # Import base components
 from arc_solver import Heuristic, PatternTool, load_puzzles
-from arc_solver_enhanced import EnhancedARCSolver, MetaHeuristic
+from arc_solver_enhanced import EnhancedARCSolver
+from arc_integrated_app import MetaHeuristic
 
 
 class ReinforcementLearningSystem:
@@ -306,12 +307,13 @@ class RLEnhancedSolver(EnhancedARCSolver):
         if self.optimizer.get_puzzle_time(puzzle_id) > 30:
             self._trigger_optimization()
             
-        return solution if solution and is_correct else None, {
-            'solved': solution is not None and is_correct,
+        result_dict = {
+            'solved': solution is not None and is_correct if 'is_correct' in locals() else False,
             'heuristic_used': selected_heuristic.name,
             'time': self.optimizer.get_puzzle_time(puzzle_id),
             'reward': episode_reward
         }
+        return solution if solution and result_dict['solved'] else None, result_dict
         
     def _get_state_representation(self, grid: List[List[int]]) -> str:
         """Get state representation for RL"""

@@ -1,7 +1,33 @@
 # ARC AGI 2 Challenge Solver System
 
+## Competition Rules and Source of Truth
+- **Official Rules**: https://arcprize.org/
+- **Competition Page**: https://arcprize.org/play
+- **Key Principle**: ARC AGI measures general intelligence through skill acquisition efficiency, not brute force
+- **Timeline**: March 26 - November 3, 2025
+- **Requirement**: Solutions must demonstrate genuine pattern learning, not memorization
+
 ## System Overview
-Build a comprehensive meta-learning system for solving ARC AGI 2 challenges that can generate synthetic training data, learn from experience, and automatically improve its solving capabilities.
+Build a comprehensive meta-learning system for solving ARC AGI 2 challenges that can generate synthetic training data, learn from experience, and automatically improve its solving capabilities while strictly adhering to competition rules.
+
+## Anti-Cheating Safeguards (MANDATORY)
+
+### Competition Compliance
+- **NEVER** apply transformations without learning from training examples
+- **ALWAYS** validate learned patterns on all training data before applying to test
+- **REQUIRE** minimum 80% accuracy on training examples before attempting test
+- **VERIFY** solutions against expected outputs when available
+- **PREVENT** blind application of heuristics
+- **LOCK** safeguards with checksums to prevent removal
+- **LOG** any attempts to bypass safeguards
+
+### Proper ARC AGI Solving Methodology
+1. Load puzzle with train/test structure
+2. Analyze ALL training input/output pairs
+3. Learn transformation pattern from examples
+4. Validate hypothesis on training data
+5. Only then apply to test input
+6. Check solution correctness
 
 ## Core Requirements
 
@@ -43,6 +69,29 @@ Build a comprehensive meta-learning system for solving ARC AGI 2 challenges that
 - Create pattern recognition functions
 - Build transformation algorithms
 - Develop reusable components for common puzzle elements
+
+## Gödel-Turing Machine Inspired Self-Improvement
+
+### Provably Optimal Self-Modifications
+Based on Jürgen Schmidhuber's Gödel machine concept:
+- **Proof-Based Improvement**: Only modify code when mathematical proof exists that the change will improve performance
+- **Formal Verification**: Maintain logical consistency through theorem proving
+- **Recursive Self-Improvement**: Allow the system to rewrite its own pattern recognition and learning algorithms
+- **Utility Maximization**: Define clear utility function (puzzle solving accuracy + speed)
+
+### Self-Improvement Protocol
+1. **get-axiom**: Retrieve base assumptions about ARC puzzle structure
+2. **apply-rule**: Use logical inference to derive new solving strategies
+3. **check-improvement**: Verify proposed modification increases utility
+4. **set-switchprog**: Implement proven improvements
+5. **state2theorem**: Convert solving attempts into formal theorems for analysis
+
+### Implementation Strategy
+- Maintain proof searcher running in parallel with solver
+- Generate theorems from successful pattern matches
+- Derive new heuristics through logical combination of proven patterns
+- Implement code switches only with formal proof of improvement
+- Accept Gödel incompleteness: some improvements may be unprovable
 
 ## Advanced Capabilities
 
@@ -477,6 +526,14 @@ Build a comprehensive meta-learning system for solving ARC AGI 2 challenges that
   - Heuristic effectiveness trends
   - Performance improvement rate
   - Generalization score evolution
+  - **Safeguard violations tracked**
+  - **Cheating attempts blocked**
+- **Time-Series Metrics**
+  - Solve rate over time (moving average)
+  - Cost per puzzle over time
+  - Heuristic effectiveness trends
+  - Performance improvement rate
+  - Generalization score evolution
 
 - **Data Collection**
   ```json
@@ -515,8 +572,17 @@ Build a comprehensive meta-learning system for solving ARC AGI 2 challenges that
 - Clear separation of concerns
 - Efficient pattern matching algorithms
 - Scalable knowledge storage
-- Self-improving capabilities
+- Self-improving capabilities through Gödel machine principles
 - Minimal human supervision
-- 100% solving rate on first 10 puzzles
+- **Fair competition compliance (NO CHEATING)**
+- **Genuine pattern learning (NO MEMORIZATION)**
 - Continuous performance improvement
 - Automatic heuristic and tool generation
+- Provably optimal self-modifications when possible
+
+## Ethical Guidelines
+- Follow all ARC Prize competition rules
+- No exploitation of test data leakage
+- Genuine intelligence demonstration
+- Transparent reporting of methodology
+- Respect for the spirit of the competition

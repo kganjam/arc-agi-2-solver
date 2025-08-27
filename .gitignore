@@ -40,4 +40,4 @@ Thumbs.db
 # Temporary
 *.tmp
 *.bak
-.cache/
+.cache/data/arc_agi_full/

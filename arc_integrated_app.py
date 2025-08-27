@@ -19,6 +19,7 @@ import copy
 # Import solver components
 from arc_solver import Heuristic, PatternTool, load_puzzles
 from arc_solver_enhanced import EnhancedARCSolver, ClaudeCodeIntegration
+from arc_solver_safeguarded import SafeguardedSolver, ARCPuzzle, SafeguardViolationError
 
 app = FastAPI()
 
@@ -81,10 +82,13 @@ class MetaHeuristic:
 class IntegratedSolver(EnhancedARCSolver):
     """Solver with web integration and meta-heuristics"""
     
-    def __init__(self):
+    def __init__(self, use_safeguards=True):
         super().__init__()
+        self.use_safeguards = use_safeguards
+        self.safeguarded_solver = SafeguardedSolver() if use_safeguards else None
         self.meta_heuristics = self._init_meta_heuristics()
         self.cost_per_claude_call = 0.01  # Estimated cost per API call
+        self.cheating_attempts_blocked = 0
         
     def _init_meta_heuristics(self) -> List[MetaHeuristic]:
         """Initialize default meta-heuristics"""
@@ -147,7 +151,25 @@ class IntegratedSolver(EnhancedARCSolver):
                 solver_state['current_puzzle'] = puzzle['id']
                 
                 # Attempt to solve
-                solution, result = self.solve_puzzle(puzzle)
+                if self.use_safeguards and self.safeguarded_solver:
+                    # Use safeguarded solver for proper ARC solving
+                    try:
+                        arc_puzzle = ARCPuzzle(puzzle)
+                        solution, result = self.safeguarded_solver.solve_puzzle(arc_puzzle)
+                        result['solved'] = result.get('validated', False)
+                        if result.get('cheating_attempted', False):
+                            self.cheating_attempts_blocked += 1
+                            solver_state['activity_log'].append({
+                                'time': datetime.now().isoformat(),
+                                'message': f"⚠️ Cheating attempt blocked for {puzzle['id']}",
+                                'type': 'warning'
+                            })
+                    except SafeguardViolationError:
+                        self.cheating_attempts_blocked += 1
+                        result = {'solved': False, 'cheating_attempted': True}
+                        solution = None
+                else:
+                    solution, result = self.solve_puzzle(puzzle)
                 solver_state['attempts'] += 1
                 
                 if result['solved']:
@@ -676,8 +698,15 @@ async def start_solver():
     data_dir = Path("data/arc_agi")
     puzzles = load_puzzles(data_dir, limit=10)
     
-    # Create solver
-    solver = IntegratedSolver()
+    # Create solver with safeguards enabled
+    solver = IntegratedSolver(use_safeguards=True)
+    
+    # Log that we're using safeguarded solver
+    solver_state['activity_log'].append({
+        'time': datetime.now().isoformat(),
+        'message': '🔒 Safeguarded solver enabled - following ARC AGI competition rules',
+        'type': 'meta'
+    })
     
     # Start solving in background
     async def run_solver():
