@@ -180,7 +180,7 @@ class IntegratedSolver(EnhancedARCSolver):
                         'type': 'success'
                     })
                 else:
-                    activity = f"✗ Failed {puzzle['id']} (attempt {result['attempts']})"
+                    activity = f"✗ Failed {puzzle['id']} (attempt {result.get('attempts', solver_state['attempts'])})"
                     solver_state['activity_log'].append({
                         'time': datetime.now().isoformat(),
                         'message': activity,

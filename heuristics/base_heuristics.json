@@ -1,0 +1,144 @@
+{
+  "heuristics": [
+    {
+      "id": "h_identity",
+      "name": "Identity Transform",
+      "description": "Output is identical to input",
+      "when_to_use": {
+        "conditions": ["input_equals_output"],
+        "features": ["no_change_detected"],
+        "confidence": 0.9
+      },
+      "transformation": {
+        "type": "identity",
+        "parameters": {}
+      },
+      "success_rate": 0.0,
+      "usage_count": 0
+    },
+    {
+      "id": "h_rotate_90",
+      "name": "Rotate 90 Degrees",
+      "description": "Rotate grid 90 degrees clockwise",
+      "when_to_use": {
+        "conditions": ["square_grid", "rotational_symmetry"],
+        "features": ["geometric_pattern"],
+        "confidence": 0.7
+      },
+      "transformation": {
+        "type": "rotate",
+        "parameters": {
+          "degrees": 90
+        }
+      },
+      "success_rate": 0.0,
+      "usage_count": 0
+    },
+    {
+      "id": "h_flip_horizontal",
+      "name": "Horizontal Flip",
+      "description": "Flip grid horizontally (top to bottom)",
+      "when_to_use": {
+        "conditions": ["horizontal_symmetry_possible"],
+        "features": ["mirror_pattern"],
+        "confidence": 0.6
+      },
+      "transformation": {
+        "type": "flip",
+        "parameters": {
+          "axis": "horizontal"
+        }
+      },
+      "success_rate": 0.0,
+      "usage_count": 0
+    },
+    {
+      "id": "h_flip_vertical",
+      "name": "Vertical Flip",
+      "description": "Flip grid vertically (left to right)",
+      "when_to_use": {
+        "conditions": ["vertical_symmetry_possible"],
+        "features": ["mirror_pattern"],
+        "confidence": 0.6
+      },
+      "transformation": {
+        "type": "flip",
+        "parameters": {
+          "axis": "vertical"
+        }
+      },
+      "success_rate": 0.0,
+      "usage_count": 0
+    },
+    {
+      "id": "h_scale_2x",
+      "name": "Scale 2x",
+      "description": "Double the size of the grid",
+      "when_to_use": {
+        "conditions": ["output_size_2x_input"],
+        "features": ["scaling_pattern"],
+        "confidence": 0.8
+      },
+      "transformation": {
+        "type": "scale",
+        "parameters": {
+          "factor": 2
+        }
+      },
+      "success_rate": 0.0,
+      "usage_count": 0
+    },
+    {
+      "id": "h_color_invert",
+      "name": "Color Inversion",
+      "description": "Invert colors (max_color - current_color)",
+      "when_to_use": {
+        "conditions": ["color_complement_pattern"],
+        "features": ["color_transformation"],
+        "confidence": 0.5
+      },
+      "transformation": {
+        "type": "color_invert",
+        "parameters": {
+          "max_color": 9
+        }
+      },
+      "success_rate": 0.0,
+      "usage_count": 0
+    },
+    {
+      "id": "h_transpose",
+      "name": "Transpose",
+      "description": "Transpose the grid (swap rows and columns)",
+      "when_to_use": {
+        "conditions": ["diagonal_symmetry"],
+        "features": ["matrix_operation"],
+        "confidence": 0.6
+      },
+      "transformation": {
+        "type": "transpose",
+        "parameters": {}
+      },
+      "success_rate": 0.0,
+      "usage_count": 0
+    },
+    {
+      "id": "h_extract_largest",
+      "name": "Extract Largest Object",
+      "description": "Extract the largest connected component",
+      "when_to_use": {
+        "conditions": ["multiple_objects", "size_reduction"],
+        "features": ["object_selection"],
+        "confidence": 0.7
+      },
+      "transformation": {
+        "type": "extract_object",
+        "parameters": {
+          "criterion": "largest"
+        }
+      },
+      "success_rate": 0.0,
+      "usage_count": 0
+    }
+  ]
+}

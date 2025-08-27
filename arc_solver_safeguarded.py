@@ -16,6 +16,7 @@ import hashlib
 from typing import List, Dict, Any, Tuple, Optional
 from pathlib import Path
 import numpy as np
+from arc_enhanced_pattern_learner import EnhancedPatternLearner
 
 # SAFEGUARD: Immutable checksum to prevent tampering
 SAFEGUARD_CHECKSUM = "arc_agi_fair_competition_2025"
@@ -151,6 +152,7 @@ class SafeguardedSolver:
     
     def __init__(self):
         self.pattern_learner = PatternLearner()
+        self.enhanced_learner = EnhancedPatternLearner()  # Use enhanced learner
         self.solving_history = []
         self._safeguard_intact = True
         
@@ -190,8 +192,19 @@ class SafeguardedSolver:
                 result['cheating_attempted'] = True
                 raise SafeguardViolationError("Must have training examples to learn from")
                 
-            # Learn the pattern
+            # Learn the pattern with both learners
             pattern = self.pattern_learner.learn_pattern(training_pairs)
+            
+            # Try enhanced learner for better pattern recognition
+            enhanced_transform = self.enhanced_learner.learn_transformation(
+                [pair[0] for pair in training_pairs],
+                [pair[1] for pair in training_pairs]
+            )
+            
+            # Use enhanced pattern if basic pattern fails
+            if pattern['transformation_type'] == 'complex' and enhanced_transform:
+                pattern = enhanced_transform
+                
             result['learned_pattern'] = pattern
             
             # SAFEGUARD: Validate learned pattern on training data
@@ -235,14 +248,41 @@ class SafeguardedSolver:
     
     def _apply_pattern(self, input_grid: List[List[int]], pattern: Dict) -> List[List[int]]:
         """Apply learned pattern to input"""
-        if pattern['transformation_type'] == 'identity':
+        transformation_type = pattern.get('transformation_type', pattern.get('pattern_type', 'identity'))
+        
+        if transformation_type == 'identity':
             return copy.deepcopy(input_grid)
-        elif pattern['transformation_type'] == 'rotation':
+        elif transformation_type == 'rotation' or transformation_type == 'rotate_90':
             return [list(row) for row in zip(*input_grid[::-1])]
-        elif pattern['transformation_type'] == 'flip':
+        elif transformation_type == 'flip' or transformation_type == 'flip_horizontal':
             return input_grid[::-1]
+        elif transformation_type == 'flip_vertical':
+            return [row[::-1] for row in input_grid]
+        elif transformation_type == 'rotate_180':
+            return [row[::-1] for row in input_grid[::-1]]
+        elif transformation_type == 'rotate_270':
+            rotated = [list(row) for row in zip(*input_grid[::-1])]
+            rotated = [list(row) for row in zip(*rotated[::-1])]
+            return [list(row) for row in zip(*rotated[::-1])]
+        elif transformation_type == 'transpose':
+            return [list(row) for row in zip(*input_grid)]
+        elif transformation_type == 'scale_2x':
+            result = []
+            for row in input_grid:
+                expanded_row = []
+                for cell in row:
+                    expanded_row.extend([cell, cell])
+                result.append(expanded_row)
+                result.append(expanded_row[:])
+            return result
         else:
-            # Complex transformation - need more sophisticated learning
+            # Try enhanced learner
+            if hasattr(self, 'enhanced_learner'):
+                try:
+                    return self.enhanced_learner.apply_learned_transformation(input_grid, pattern)
+                except:
+                    pass
+            # Default: return original
             return copy.deepcopy(input_grid)
     
     def check_solution_validity(self, solution: List[List[int]], 

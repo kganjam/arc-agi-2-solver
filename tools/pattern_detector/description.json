@@ -1,0 +1,38 @@
+{
+  "tool_id": "pattern_detector",
+  "name": "Pattern Detector",
+  "version": "1.0.0",
+  "description": "Detects various patterns in ARC AGI grids including symmetry, repetition, and object structures",
+  "author": "ARC AGI Solver System",
+  "created": "2025-08-27",
+  "capabilities": [
+    "symmetry_detection",
+    "object_counting",
+    "pattern_repetition",
+    "boundary_detection",
+    "color_analysis"
+  ],
+  "input": {
+    "type": "grid",
+    "format": "2D array of integers",
+    "constraints": {
+      "max_size": [30, 30],
+      "valid_colors": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+    }
+  },
+  "output": {
+    "type": "analysis",
+    "format": "dictionary",
+    "fields": {
+      "symmetry": "Symmetry properties detected",
+      "objects": "List of connected components",
+      "patterns": "Repeating patterns found",
+      "boundaries": "Edge and boundary information"
+    }
+  },
+  "performance": {
+    "average_time_ms": 10,
+    "success_rate": 0.0,
+    "usage_count": 0
+  }
+}
