@@ -142,75 +142,109 @@ Be concise but thorough. Execute functions to get real data, don't guess."""
     def _smart_bedrock_query(self, user_input: str) -> Dict:
         """Enhanced Bedrock query with function execution loop"""
         
-        # Build context
-        context = self._build_context()
-        
-        # Start with just the current request
-        messages = [
-            {
-                "role": "user", 
-                "content": f"{context}\n\nUser request: {user_input}"
+        try:
+            # Build context
+            context = self._build_context()
+            
+            # Start with just the current request
+            messages = [
+                {
+                    "role": "user", 
+                    "content": f"{context}\n\nUser request: {user_input}"
+                }
+            ]
+            
+            # Process with function calling loop
+            max_iterations = 3  # Reduced to prevent hanging
+            final_response = ""
+            function_results = []
+            
+            for iteration in range(max_iterations):
+                try:
+                    # Query Bedrock with timeout
+                    response_text = self._call_bedrock(messages)
+                    
+                    # Check for function calls
+                    function_calls = self._extract_function_calls(response_text)
+                    
+                    if not function_calls:
+                        # No more functions to call, this is the final response
+                        final_response = response_text
+                        break
+                    
+                    # Limit function calls per iteration
+                    if len(function_calls) > 3:
+                        function_calls = function_calls[:3]
+                    
+                    # Execute functions
+                    for func_call in function_calls:
+                        try:
+                            result = self.execute_function(func_call['name'], func_call.get('parameters', {}))
+                            function_results.append({
+                                'function': func_call['name'],
+                                'result': result
+                            })
+                        except Exception as e:
+                            # Log function execution error but continue
+                            function_results.append({
+                                'function': func_call['name'],
+                                'result': {'error': str(e)}
+                            })
+                        
+                        # Add function result to conversation
+                        messages.append({
+                            "role": "assistant",
+                            "content": response_text[:1000]  # Limit message size
+                        })
+                        messages.append({
+                            "role": "user",
+                            "content": f"Function {func_call['name']} returned: {json.dumps(result)[:500]}"  # Limit result size
+                        })
+                    
+                    # Prevent infinite loops - if we're at max iterations, stop
+                    if iteration == max_iterations - 1:
+                        final_response = response_text if not final_response else final_response
+                        break
+                        
+                except Exception as e:
+                    # Handle Bedrock query errors
+                    print(f"Error in Bedrock query iteration {iteration}: {e}")
+                    final_response = f"I encountered an error processing your request: {str(e)}"
+                    break
+            
+            # Update conversation history (limit size)
+            if len(self.conversation_history) > 20:
+                self.conversation_history = self.conversation_history[-20:]
+            
+            self.conversation_history.append({
+                "role": "user",
+                "content": user_input
+            })
+            self.conversation_history.append({
+                "role": "assistant", 
+                "content": final_response[:1000] if final_response else "No response generated"
+            })
+            
+            # Prepare response
+            response = {
+                "message": final_response if final_response else "I couldn't generate a response",
+                "function_results": function_results
             }
-        ]
-        
-        # Process with function calling loop
-        max_iterations = 5
-        final_response = ""
-        function_results = []
-        
-        for iteration in range(max_iterations):
-            # Query Bedrock
-            response_text = self._call_bedrock(messages)
             
-            # Check for function calls
-            function_calls = self._extract_function_calls(response_text)
+            # Include updated output grid if modified
+            if self.output_grid:
+                response["output_grid"] = self.output_grid
             
-            if not function_calls:
-                # No more functions to call, this is the final response
-                final_response = response_text
-                break
+            return response
             
-            # Execute functions
-            for func_call in function_calls:
-                result = self.execute_function(func_call['name'], func_call.get('parameters', {}))
-                function_results.append({
-                    'function': func_call['name'],
-                    'result': result
-                })
-                
-                # Add function result to conversation
-                messages.append({
-                    "role": "assistant",
-                    "content": response_text
-                })
-                messages.append({
-                    "role": "user",
-                    "content": f"Function {func_call['name']} returned: {json.dumps(result)}"
-                })
-            
-            # Continue the loop to let AI process the function results
-        
-        # Update conversation history
-        self.conversation_history.append({
-            "role": "user",
-            "content": user_input
-        })
-        self.conversation_history.append({
-            "role": "assistant", 
-            "content": final_response
-        })
-        
-        # Prepare response
-        response = {
-            "message": final_response,
-            "function_results": function_results
-        }
-        
-        # Include updated output grid if modified
-        if self.output_grid:
-            response["output_grid"] = self.output_grid
-        
-        return response
+        except Exception as e:
+            # Catch-all error handler
+            print(f"Critical error in _smart_bedrock_query: {e}")
+            return {
+                "message": f"An error occurred: {str(e)}",
+                "function_results": [],
+                "error": str(e)
+            }
     
     def _call_bedrock(self, messages: List[Dict]) -> str:
         """Call Bedrock API with messages"""
@@ -604,45 +638,61 @@ The tool should:
 
 Make it integrate well with the existing ARC AGI puzzle solving system."""
         
-        # Run asynchronously
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        
+        # Run asynchronously in a safe way
         try:
-            result = loop.run_until_complete(
-                self.claude_dialogue.invoke_claude(prompt)
-            )
-            
-            if result['status'] == 'completed':
-                # Try to import the generated tool
-                from pathlib import Path
-                tool_file = Path(f"arc_generated_{tool_name}.py")
+            # Check if there's already an event loop running
+            try:
+                loop = asyncio.get_running_loop()
+                # We're inside an async context, can't use run_until_complete
+                # Return a simple message for now
+                return {
+                    "success": False,
+                    "message": "Cannot generate tools while handling async requests. Please try from a direct script."
+                }
+            except RuntimeError:
+                # No event loop running, we can create one
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
                 
-                if tool_file.exists():
-                    return {
-                        "success": True,
-                        "message": f"Tool '{tool_name}' generated successfully",
-                        "file_path": str(tool_file),
-                        "response": result.get('response', '')[:500]
-                    }
+                result = loop.run_until_complete(
+                    self.claude_dialogue.invoke_claude(prompt)
+                )
+                
+                if result['status'] == 'completed':
+                    # Try to import the generated tool
+                    from pathlib import Path
+                    tool_file = Path(f"arc_generated_{tool_name}.py")
+                    
+                    if tool_file.exists():
+                        return {
+                            "success": True,
+                            "message": f"Tool '{tool_name}' generated successfully",
+                            "file_path": str(tool_file),
+                            "response": result.get('response', '')[:500]
+                        }
+                    else:
+                        return {
+                            "success": False,
+                            "message": "Tool generation completed but file not found",
+                            "response": result.get('response', '')
+                        }
                 else:
                     return {
                         "success": False,
-                        "message": "Tool generation completed but file not found",
-                        "response": result.get('response', '')
+                        "message": f"Tool generation failed: {result.get('response', 'Unknown error')}"
                     }
-            else:
-                return {
-                    "success": False,
-                    "message": f"Tool generation failed: {result.get('response', 'Unknown error')}"
-                }
         except Exception as e:
             return {
                 "success": False,
                 "message": f"Error generating tool: {str(e)}"
             }
         finally:
-            loop.close()
+            # Only close the loop if we created it
+            if 'loop' in locals() and loop:
+                try:
+                    loop.close()
+                except:
+                    pass
     
     def _list_generated_tools(self) -> Dict:
         """List all generated tools"""
