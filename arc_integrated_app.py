@@ -24,6 +24,37 @@ from arc_puzzle_editor_enhanced import get_editor_html
 import numpy as np
 import random
 
+# WebSocket connection manager
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: List[WebSocket] = []
+        self.puzzle_solving_connections: Dict[str, WebSocket] = {}
+
+    async def connect(self, websocket: WebSocket, client_id: str = None):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+        if client_id:
+            self.puzzle_solving_connections[client_id] = websocket
+
+    def disconnect(self, websocket: WebSocket, client_id: str = None):
+        if websocket in self.active_connections:
+            self.active_connections.remove(websocket)
+        if client_id and client_id in self.puzzle_solving_connections:
+            del self.puzzle_solving_connections[client_id]
+
+    async def send_personal_message(self, message: str, websocket: WebSocket):
+        await websocket.send_text(message)
+
+    async def broadcast(self, message: str):
+        for connection in self.active_connections:
+            await connection.send_text(message)
+    
+    async def send_to_client(self, client_id: str, message: dict):
+        if client_id in self.puzzle_solving_connections:
+            await self.puzzle_solving_connections[client_id].send_json(message)
+
+manager = ConnectionManager()
+
 app = FastAPI()
 
 app.add_middleware(
@@ -79,7 +110,7 @@ solver_state = {
 }
 
 # WebSocket connections
-websocket_clients = []
+# websocket_clients = []  # Replaced with ConnectionManager
 
 class MetaHeuristic:
     """Meta-heuristic for guiding code generation"""
@@ -287,18 +318,13 @@ async def broadcast_update():
         state_copy['start_time'] = state_copy['start_time'].isoformat()
     message = json.dumps(state_copy)
     
-    for client in websocket_clients:
-        try:
-            await client.send_text(message)
-        except:
-            pass  # Client disconnected
+    await manager.broadcast(message)
 
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     """WebSocket endpoint for real-time updates"""
-    await websocket.accept()
-    websocket_clients.append(websocket)
+    await manager.connect(websocket)
     
     try:
         # Send initial state (handle datetime)
@@ -312,7 +338,21 @@ async def websocket_endpoint(websocket: WebSocket):
             await websocket.receive_text()
             
     except WebSocketDisconnect:
-        websocket_clients.remove(websocket)
+        manager.disconnect(websocket)
+
+@app.websocket("/ws/puzzle-solving/{client_id}")
+async def puzzle_solving_websocket(websocket: WebSocket, client_id: str):
+    """WebSocket endpoint for real-time puzzle solving progress"""
+    await manager.connect(websocket, client_id)
+    
+    try:
+        while True:
+            # Keep connection alive
+            data = await websocket.receive_text()
+            # Handle any incoming messages if needed
+            
+    except WebSocketDisconnect:
+        manager.disconnect(websocket, client_id)
 
 
 @app.get("/")
@@ -815,8 +855,18 @@ from arc_puzzle_loader import puzzle_loader
 from arc_puzzle_ai_assistant_v2 import PuzzleAIAssistant
 from arc_conversation_logger import conversation_logger
 
-# Global AI assistant instance
-puzzle_ai = PuzzleAIAssistant()
+# Progress callback for streaming AI messages
+async def stream_progress_to_client(message_data: Dict):
+    """Stream progress messages to connected WebSocket clients"""
+    try:
+        # Send to all puzzle-solving WebSocket connections
+        for client_id in list(manager.puzzle_solving_connections.keys()):
+            await manager.send_to_client(client_id, message_data)
+    except Exception as e:
+        print(f"Error streaming progress: {e}")
+
+# Global AI assistant instance with progress callback
+puzzle_ai = PuzzleAIAssistant(progress_callback=lambda msg: asyncio.create_task(stream_progress_to_client(msg)))
 
 @app.get("/puzzle-editor")  
 async def puzzle_editor():
@@ -944,6 +994,7 @@ async def ai_chat(request: Dict[str, Any]):
     message = request.get('message', '')
     puzzle_id = request.get('puzzle_id')
     output_grid = request.get('output_grid')
+    client_id = request.get('client_id', 'default')  # For WebSocket progress streaming
     
     try:
         # Get current puzzle if needed

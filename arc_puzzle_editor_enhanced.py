@@ -357,6 +357,52 @@ def get_editor_html():
             background: #45a049;
         }
         
+        /* Thinking indicator */
+        .thinking-indicator {
+            display: none;
+            padding: 12px;
+            margin: 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 8px;
+            color: #fff;
+            font-weight: 500;
+            animation: pulse 1.5s infinite;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+        
+        .thinking-indicator.active {
+            display: flex !important;
+            align-items: center;
+            gap: 8px;
+            z-index: 1000;
+            position: relative;
+        }
+        
+        .thinking-dots {
+            display: inline-block;
+            font-size: 20px;
+            font-weight: bold;
+        }
+        
+        .thinking-dots::after {
+            content: '...';
+            animation: dots 1.5s steps(3, end) infinite;
+            display: inline-block;
+            width: 30px;
+            text-align: left;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+        
+        @keyframes dots {
+            0%, 20% { content: '.'; }
+            40% { content: '..'; }
+            60%, 100% { content: '...'; }
+        }
+        
         /* Section Headers */
         .section-header {
             color: #fff;
@@ -673,10 +719,16 @@ def get_editor_html():
                     <div class="chat-message ai">
                         Welcome! I can help you edit the output grid and answer questions about the puzzle. Try commands like "make cell 3,3 red" or ask "what is the grid size?"
                     </div>
+                    <div class="thinking-indicator" id="thinking-indicator">
+                        <span style="font-size: 20px;">🤔</span>
+                        <span>AI is thinking</span>
+                        <span class="thinking-dots"></span>
+                    </div>
                 </div>
                 <div class="chat-input">
                     <input type="text" id="chat-input" placeholder="Type a command or question..." onkeydown="handleChatKeyPress(event)">
                     <button onclick="sendChatMessage()">Send</button>
+                    <button onclick="testThinkingIndicator()" style="background: #ff6b6b; margin-left: 5px;" title="Test indicator">🧪</button>
                 </div>
             </div>
         </div>
@@ -693,10 +745,93 @@ def get_editor_html():
         let commandHistory = [];
         let historyIndex = -1;
         let currentInput = '';
+        let progressWebSocket = null;
+        let clientId = 'client_' + Math.random().toString(36).substr(2, 9);
+        
+        // Initialize WebSocket for progress streaming
+        function connectProgressWebSocket() {
+            const wsUrl = `ws://localhost:8050/ws/puzzle-solving/${clientId}`;
+            progressWebSocket = new WebSocket(wsUrl);
+            
+            progressWebSocket.onopen = () => {
+                console.log('✅ Progress WebSocket connected');
+            };
+            
+            progressWebSocket.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    if (data.type === 'progress') {
+                        // Add progress message to chat
+                        handleProgressMessage(data);
+                    }
+                } catch (e) {
+                    console.error('Error parsing WebSocket message:', e);
+                }
+            };
+            
+            progressWebSocket.onclose = () => {
+                console.log('❌ Progress WebSocket disconnected, reconnecting...');
+                setTimeout(connectProgressWebSocket, 1000);
+            };
+            
+            progressWebSocket.onerror = (error) => {
+                console.error('WebSocket error:', error);
+            };
+        }
+        
+        function handleProgressMessage(data) {
+            const messageType = data.message_type || 'info';
+            const message = data.message || '';
+            
+            // Create styled progress message based on type
+            let styledMessage = message;
+            let className = 'ai';
+            
+            if (messageType === 'bedrock_query') {
+                styledMessage = `<strong>🤖 Bedrock AI Query:</strong> ${message}`;
+            } else if (messageType === 'bedrock_response') {
+                styledMessage = `<strong>💡 Bedrock Response:</strong><br><code>${message}</code>`;
+            } else if (messageType === 'theory') {
+                styledMessage = `<strong>💭 Theory:</strong> <em>${message}</em>`;
+            } else if (messageType === 'attempt') {
+                styledMessage = `<strong>🔄 ${message}</strong>`;
+            } else if (messageType === 'success') {
+                styledMessage = `<span style="color: #4CAF50;">✅ ${message}</span>`;
+            } else if (messageType === 'failure') {
+                styledMessage = `<span style="color: #f44336;">❌ ${message}</span>`;
+            } else if (messageType === 'solved') {
+                styledMessage = `<span style="color: #FFD700; font-weight: bold;">🎉 ${message}</span>`;
+            } else if (messageType === 'tool_suggestion') {
+                styledMessage = `<strong>🛠️ Tool Suggestion:</strong> ${message}`;
+            }
+            
+            // Add message to chat
+            addProgressMessage(styledMessage, className);
+        }
+        
+        function addProgressMessage(message, className = 'ai') {
+            const chatMessages = document.getElementById('chat-messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `chat-message ${className}`;
+            messageDiv.innerHTML = message;
+            
+            // Insert before thinking indicator if it exists
+            const thinkingIndicator = document.getElementById('thinking-indicator');
+            if (thinkingIndicator) {
+                chatMessages.insertBefore(messageDiv, thinkingIndicator);
+            } else {
+                chatMessages.appendChild(messageDiv);
+            }
+            
+            // Scroll to bottom
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
         
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
             console.log('DOM loaded, starting puzzle load...');
+            // Connect to progress WebSocket
+            connectProgressWebSocket();
             // Add a small delay to ensure all elements are ready
             setTimeout(() => {
                 loadCurrentPuzzle();
@@ -1132,6 +1267,10 @@ def get_editor_html():
             addChatMessage(message, 'user');
             input.value = '';
             
+            // Show thinking indicator
+            console.log('📤 Sending message to AI:', message);
+            showThinkingIndicator();
+            
             // Send to AI
             try {
                 const response = await fetch('/api/puzzle/ai-chat', {
@@ -1140,7 +1279,8 @@ def get_editor_html():
                     body: JSON.stringify({
                         message: message,
                         puzzle_id: currentPuzzle ? currentPuzzle.id : null,
-                        output_grid: outputGrid
+                        output_grid: outputGrid,
+                        client_id: clientId  // For WebSocket progress streaming
                     })
                 });
                 
@@ -1176,7 +1316,51 @@ def get_editor_html():
             } catch (error) {
                 console.error('Error sending chat message:', error);
                 addChatMessage('Sorry, there was an error processing your request.', 'ai');
+            } finally {
+                // Hide thinking indicator
+                console.log('📥 Response received, hiding indicator');
+                hideThinkingIndicator();
             }
+        }
+        
+        function showThinkingIndicator() {
+            console.log('🔵 showThinkingIndicator called');
+            const indicator = document.getElementById('thinking-indicator');
+            if (indicator) {
+                indicator.classList.add('active');
+                indicator.style.display = 'flex';  // Force display
+                console.log('✅ Thinking indicator shown');
+                // Scroll to show indicator
+                const chatMessages = document.getElementById('chat-messages');
+                setTimeout(() => {
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                }, 100);
+            } else {
+                console.error('❌ Thinking indicator element not found!');
+            }
+        }
+        
+        function hideThinkingIndicator() {
+            console.log('🔴 hideThinkingIndicator called');
+            const indicator = document.getElementById('thinking-indicator');
+            if (indicator) {
+                indicator.classList.remove('active');
+                indicator.style.display = 'none';  // Force hide
+                console.log('✅ Thinking indicator hidden');
+            } else {
+                console.error('❌ Thinking indicator element not found!');
+            }
+        }
+        
+        function testThinkingIndicator() {
+            console.log('🧪 Testing thinking indicator...');
+            addChatMessage('Testing thinking indicator for 3 seconds...', 'user');
+            showThinkingIndicator();
+            
+            setTimeout(() => {
+                hideThinkingIndicator();
+                addChatMessage('✅ Test complete! The thinking indicator should have been visible with a purple gradient background.', 'ai');
+            }, 3000);
         }
         
         function addChatMessage(message, sender) {
