@@ -109,11 +109,13 @@ class ClaudeCodeDialogue:
             print(f"Warning: Could not commit changes: {e}")
         
         # Build Claude Code command
+        # Use --print for non-interactive output
         cmd = [
             self.claude_code_path,
+            "--print",  # Non-interactive mode
             "--allowedTools", self.allowed_tools,
             "--permission-mode", self.permission_mode,
-            "--message", prompt
+            prompt  # Prompt as positional argument
         ]
         
         try:
