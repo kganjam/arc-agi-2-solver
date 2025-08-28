@@ -812,7 +812,7 @@ def generate_sample_puzzles(count: int) -> List[Dict]:
 
 
 from arc_puzzle_loader import puzzle_loader
-from arc_puzzle_ai_assistant import PuzzleAIAssistant
+from arc_puzzle_ai_assistant_v2 import PuzzleAIAssistant
 from arc_conversation_logger import conversation_logger
 
 # Global AI assistant instance

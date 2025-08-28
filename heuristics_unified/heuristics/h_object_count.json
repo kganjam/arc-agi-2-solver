@@ -1,0 +1,33 @@
+{
+  "id": "h_object_count",
+  "name": "Object Counting",
+  "description": "Count objects and adjust output based on count",
+  "pattern_type": "object_based",
+  "conditions": [
+    "discrete_objects",
+    "countable_elements"
+  ],
+  "features": [],
+  "confidence": 0.5,
+  "transformation": {},
+  "transformations": [
+    "count_objects",
+    "resize_by_count"
+  ],
+  "code_snippet": "",
+  "success_rate": 0.0,
+  "usage_count": 0,
+  "successful_applications": [],
+  "created_at": "2025-08-27T18:40:40.984247",
+  "updated_at": "2025-08-27T20:14:25.037926",
+  "tags": [
+    "counting",
+    "objects"
+  ],
+  "complexity": 3,
+  "examples": [],
+  "_metadata": {
+    "version": "1.0",
+    "last_updated": "2025-08-27T20:14:25.037926"
+  }
+}

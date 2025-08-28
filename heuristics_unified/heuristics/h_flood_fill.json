@@ -1,0 +1,33 @@
+{
+  "id": "h_flood_fill",
+  "name": "Flood Fill Regions",
+  "description": "Fill connected regions with specific colors",
+  "pattern_type": "color_mapping",
+  "conditions": [
+    "enclosed_regions",
+    "boundary_detection"
+  ],
+  "features": [],
+  "confidence": 0.5,
+  "transformation": {},
+  "transformations": [
+    "flood_fill",
+    "region_color"
+  ],
+  "code_snippet": "",
+  "success_rate": 0.0,
+  "usage_count": 3,
+  "successful_applications": [],
+  "created_at": "2025-08-27T18:40:40.984258",
+  "updated_at": "2025-08-27T20:47:13.674336",
+  "tags": [
+    "fill",
+    "regions"
+  ],
+  "complexity": 2,
+  "examples": [],
+  "_metadata": {
+    "version": "1.0",
+    "last_updated": "2025-08-27T20:47:13.674336"
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "id": "h_color_invert",
+  "name": "Color Inversion",
+  "description": "Invert colors (max_color - current_color)",
+  "pattern_type": "color_invert",
+  "conditions": [
+    "color_complement_pattern"
+  ],
+  "features": [
+    "color_transformation"
+  ],
+  "confidence": 0.5,
+  "transformation": {
+    "type": "color_invert",
+    "parameters": {
+      "max_color": 9
+    }
+  },
+  "transformations": [],
+  "code_snippet": "",
+  "success_rate": 0.0,
+  "usage_count": 1,
+  "successful_applications": [],
+  "created_at": "2025-08-27T20:44:57.050130",
+  "updated_at": "2025-08-27T20:46:49.912938",
+  "tags": [],
+  "complexity": 1,
+  "examples": [],
+  "_metadata": {
+    "version": "1.0",
+    "last_updated": "2025-08-27T20:46:49.912938"
+  }
+}

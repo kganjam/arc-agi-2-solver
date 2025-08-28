@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Puzzle Display</title>
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        .grid { display: inline-block; border: 2px solid black; margin: 10px; }
+        .row { display: flex; }
+        .cell { width: 20px; height: 20px; border: 1px solid #ccc; }
+        .color-0 { background: #000000; }
+        .color-1 { background: #0074D9; }
+        .color-2 { background: #FF4136; }
+        .color-3 { background: #2ECC40; }
+        .color-4 { background: #FFDC00; }
+        .color-5 { background: #AAAAAA; }
+        .color-6 { background: #F012BE; }
+        .color-7 { background: #FF851B; }
+        .color-8 { background: #7FDBFF; }
+        .color-9 { background: #870C25; }
+        .error { color: red; }
+        .success { color: green; }
+    </style>
+</head>
+<body>
+    <h1>Puzzle Loading Test</h1>
+    <div id="status"></div>
+    <div id="puzzle-info"></div>
+    <div id="grids"></div>
+    
+    <script>
+        async function testPuzzleLoading() {
+            const status = document.getElementById('status');
+            const info = document.getElementById('puzzle-info');
+            const gridsDiv = document.getElementById('grids');
+            
+            try {
+                status.innerHTML = '<p>Fetching puzzle data...</p>';
+                
+                const response = await fetch('/api/puzzle/current');
+                const data = await response.json();
+                
+                console.log('Full response:', data);
+                
+                if (!data.puzzle) {
+                    throw new Error('No puzzle in response');
+                }
+                
+                status.innerHTML = '<p class="success">✓ Puzzle loaded successfully!</p>';
+                
+                // Display puzzle info
+                info.innerHTML = `
+                    <h2>Puzzle ID: ${data.puzzle.id || 'Unknown'}</h2>
+                    <p>Position: ${data.position ? data.position[0] + ' of ' + data.position[1] : 'Unknown'}</p>
+                    <p>Training examples: ${data.puzzle.train ? data.puzzle.train.length : 0}</p>
+                    <p>Test examples: ${data.puzzle.test ? data.puzzle.test.length : 0}</p>
+                `;
+                
+                // Display grids
+                gridsDiv.innerHTML = '<h3>Training Examples:</h3>';
+                
+                if (data.puzzle.train) {
+                    data.puzzle.train.forEach((example, idx) => {
+                        gridsDiv.innerHTML += `<h4>Example ${idx + 1}:</h4>`;
+                        gridsDiv.innerHTML += '<div style="display: flex; align-items: center;">';
+                        gridsDiv.innerHTML += renderGrid(example.input, 'Input');
+                        gridsDiv.innerHTML += '<span style="margin: 0 10px;">→</span>';
+                        gridsDiv.innerHTML += renderGrid(example.output, 'Output');
+                        gridsDiv.innerHTML += '</div>';
+                    });
+                }
+                
+                if (data.puzzle.test && data.puzzle.test[0]) {
+                    gridsDiv.innerHTML += '<h3>Test Input:</h3>';
+                    gridsDiv.innerHTML += renderGrid(data.puzzle.test[0].input, 'Test Input');
+                }
+                
+            } catch (error) {
+                status.innerHTML = `<p class="error">✗ Error: ${error.message}</p>`;
+                console.error('Error loading puzzle:', error);
+            }
+        }
+        
+        function renderGrid(grid, label) {
+            if (!grid || !Array.isArray(grid)) {
+                return `<div>${label}: Invalid grid data</div>`;
+            }
+            
+            let html = `<div style="display: inline-block; margin: 10px;">`;
+            html += `<div style="font-size: 12px; margin-bottom: 5px;">${label} (${grid.length}x${grid[0]?.length || 0})</div>`;
+            html += '<div class="grid">';
+            
+            grid.forEach(row => {
+                html += '<div class="row">';
+                row.forEach(cell => {
+                    html += `<div class="cell color-${cell}"></div>`;
+                });
+                html += '</div>';
+            });
+            
+            html += '</div></div>';
+            return html;
+        }
+        
+        // Load puzzle on page load
+        testPuzzleLoading();
+    </script>
+</body>
+</html>

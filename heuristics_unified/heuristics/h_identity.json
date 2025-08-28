@@ -1,0 +1,31 @@
+{
+  "id": "h_identity",
+  "name": "Identity Transform",
+  "description": "Output is identical to input",
+  "pattern_type": "identity",
+  "conditions": [
+    "input_equals_output"
+  ],
+  "features": [
+    "no_change_detected"
+  ],
+  "confidence": 0.9,
+  "transformation": {
+    "type": "identity",
+    "parameters": {}
+  },
+  "transformations": [],
+  "code_snippet": "",
+  "success_rate": 0.0,
+  "usage_count": 0,
+  "successful_applications": [],
+  "created_at": "2025-08-27T20:44:57.012395",
+  "updated_at": "2025-08-27T20:44:57.012407",
+  "tags": [],
+  "complexity": 1,
+  "examples": [],
+  "_metadata": {
+    "version": "1.0",
+    "last_updated": "2025-08-27T20:44:57.012407"
+  }
+}

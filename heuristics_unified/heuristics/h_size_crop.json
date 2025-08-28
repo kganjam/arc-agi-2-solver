@@ -1,0 +1,33 @@
+{
+  "id": "h_size_crop",
+  "name": "Size Cropping",
+  "description": "Crop to bounding box of non-background elements",
+  "pattern_type": "size_transform",
+  "conditions": [
+    "sparse_content",
+    "background_dominant"
+  ],
+  "features": [],
+  "confidence": 0.5,
+  "transformation": {},
+  "transformations": [
+    "find_bounding_box",
+    "crop_to_content"
+  ],
+  "code_snippet": "",
+  "success_rate": 0.0,
+  "usage_count": 0,
+  "successful_applications": [],
+  "created_at": "2025-08-27T18:40:40.984254",
+  "updated_at": "2025-08-27T20:14:25.047405",
+  "tags": [
+    "size",
+    "crop"
+  ],
+  "complexity": 1,
+  "examples": [],
+  "_metadata": {
+    "version": "1.0",
+    "last_updated": "2025-08-27T20:14:25.047405"
+  }
+}

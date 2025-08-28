@@ -1,0 +1,26 @@
+{
+  "id": "h_scale_and_fill_14",
+  "name": "Scale and Fill",
+  "description": "Scales up a small input grid to a larger size and fills all cells with a calculated value",
+  "pattern_type": "size_transform",
+  "conditions": [
+    "integer_grid_pattern"
+  ],
+  "features": [],
+  "confidence": 0.5,
+  "transformation": {},
+  "transformations": [],
+  "code_snippet": "",
+  "success_rate": 0.0,
+  "usage_count": 0,
+  "successful_applications": [],
+  "created_at": "2025-08-27T20:46:06.768745",
+  "updated_at": "2025-08-27T20:46:06.768757",
+  "tags": [],
+  "complexity": 1,
+  "examples": [],
+  "_metadata": {
+    "version": "1.0",
+    "last_updated": "2025-08-27T20:46:06.768757"
+  }
+}

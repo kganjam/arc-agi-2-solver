@@ -1,0 +1,33 @@
+{
+  "id": "h_scale_2x",
+  "name": "Scale 2x",
+  "description": "Double the size of the grid",
+  "pattern_type": "scale",
+  "conditions": [
+    "output_size_2x_input"
+  ],
+  "features": [
+    "scaling_pattern"
+  ],
+  "confidence": 0.8,
+  "transformation": {
+    "type": "scale",
+    "parameters": {
+      "factor": 2
+    }
+  },
+  "transformations": [],
+  "code_snippet": "",
+  "success_rate": 0.0,
+  "usage_count": 0,
+  "successful_applications": [],
+  "created_at": "2025-08-27T20:44:57.039098",
+  "updated_at": "2025-08-27T20:44:57.039107",
+  "tags": [],
+  "complexity": 1,
+  "examples": [],
+  "_metadata": {
+    "version": "1.0",
+    "last_updated": "2025-08-27T20:44:57.039107"
+  }
+}

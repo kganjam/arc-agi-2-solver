@@ -1,0 +1,33 @@
+{
+  "id": "h_pattern_extend",
+  "name": "Pattern Extension",
+  "description": "Extend existing patterns to fill grid",
+  "pattern_type": "pattern_completion",
+  "conditions": [
+    "repeating_pattern",
+    "incomplete_pattern"
+  ],
+  "features": [],
+  "confidence": 0.5,
+  "transformation": {},
+  "transformations": [
+    "extend_pattern",
+    "fill_pattern"
+  ],
+  "code_snippet": "",
+  "success_rate": 0.0,
+  "usage_count": 1,
+  "successful_applications": [],
+  "created_at": "2025-08-27T18:40:40.984250",
+  "updated_at": "2025-08-27T20:45:51.294353",
+  "tags": [
+    "pattern",
+    "completion"
+  ],
+  "complexity": 2,
+  "examples": [],
+  "_metadata": {
+    "version": "1.0",
+    "last_updated": "2025-08-27T20:45:51.294353"
+  }
+}

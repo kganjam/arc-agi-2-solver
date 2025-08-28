@@ -1,0 +1,34 @@
+{
+  "id": "h_rotate_90",
+  "name": "Rotate 90 Degrees",
+  "description": "Rotate grid 90 degrees clockwise",
+  "pattern_type": "rotate",
+  "conditions": [
+    "square_grid",
+    "rotational_symmetry"
+  ],
+  "features": [
+    "geometric_pattern"
+  ],
+  "confidence": 0.7,
+  "transformation": {
+    "type": "rotate",
+    "parameters": {
+      "degrees": 90
+    }
+  },
+  "transformations": [],
+  "code_snippet": "",
+  "success_rate": 0.0,
+  "usage_count": 0,
+  "successful_applications": [],
+  "created_at": "2025-08-27T20:44:57.017876",
+  "updated_at": "2025-08-27T20:44:57.017891",
+  "tags": [],
+  "complexity": 1,
+  "examples": [],
+  "_metadata": {
+    "version": "1.0",
+    "last_updated": "2025-08-27T20:44:57.017891"
+  }
+}

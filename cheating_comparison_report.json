@@ -1,0 +1,19 @@
+{
+  "timestamp": "2025-08-27T14:09:56.191172",
+  "cheating_system": {
+    "solved": 10,
+    "time": 0.0038704872131347656,
+    "has_solutions": false
+  },
+  "real_system": {
+    "solved": 3,
+    "time": 0.0007631778717041016,
+    "has_solutions": true,
+    "avg_confidence": 0.9,
+    "avg_training_acc": 1.0
+  },
+  "verdict": {
+    "original_is_cheating": true,
+    "fixed_is_legitimate": true
+  }
+}

@@ -1,0 +1,111 @@
+{
+  "total": 15,
+  "heuristics": [
+    {
+      "id": "h_color_invert",
+      "name": "Color Inversion",
+      "pattern_type": "color_invert",
+      "success_rate": 0.0,
+      "usage_count": 0
+    },
+    {
+      "id": "h_color_map",
+      "name": "Direct Color Mapping",
+      "pattern_type": "color_mapping",
+      "success_rate": 0.0,
+      "usage_count": 0
+    },
+    {
+      "id": "h_extract_largest",
+      "name": "Extract Largest Object",
+      "pattern_type": "extract_object",
+      "success_rate": 0.0,
+      "usage_count": 0
+    },
+    {
+      "id": "h_flip_horizontal",
+      "name": "Horizontal Flip",
+      "pattern_type": "flip",
+      "success_rate": 0.0,
+      "usage_count": 0
+    },
+    {
+      "id": "h_flip_vertical",
+      "name": "Vertical Flip",
+      "pattern_type": "flip",
+      "success_rate": 0.0,
+      "usage_count": 0
+    },
+    {
+      "id": "h_flood_fill",
+      "name": "Flood Fill Regions",
+      "pattern_type": "color_mapping",
+      "success_rate": 0.0,
+      "usage_count": 1
+    },
+    {
+      "id": "h_identity",
+      "name": "Identity Transform",
+      "pattern_type": "identity",
+      "success_rate": 0.0,
+      "usage_count": 0
+    },
+    {
+      "id": "h_object_count",
+      "name": "Object Counting",
+      "pattern_type": "object_based",
+      "success_rate": 0.0,
+      "usage_count": 0
+    },
+    {
+      "id": "h_pattern_extend",
+      "name": "Pattern Extension",
+      "pattern_type": "pattern_completion",
+      "success_rate": 0.0,
+      "usage_count": 1
+    },
+    {
+      "id": "h_rotate_90",
+      "name": "Rotate 90 Degrees",
+      "pattern_type": "rotate",
+      "success_rate": 0.0,
+      "usage_count": 0
+    },
+    {
+      "id": "h_scale_2x",
+      "name": "Scale 2x",
+      "pattern_type": "scale",
+      "success_rate": 0.0,
+      "usage_count": 0
+    },
+    {
+      "id": "h_size_crop",
+      "name": "Size Cropping",
+      "pattern_type": "size_transform",
+      "success_rate": 0.0,
+      "usage_count": 0
+    },
+    {
+      "id": "h_symmetry",
+      "name": "Symmetry Detection",
+      "pattern_type": "symmetry",
+      "success_rate": 0.0,
+      "usage_count": 0
+    },
+    {
+      "id": "h_transpose",
+      "name": "Transpose",
+      "pattern_type": "transpose",
+      "success_rate": 0.0,
+      "usage_count": 0
+    },
+    {
+      "id": "h_scale_and_fill_14",
+      "name": "Scale and Fill",
+      "pattern_type": "size_transform",
+      "success_rate": 0.0,
+      "usage_count": 0
+    }
+  ],
+  "last_updated": "2025-08-27T20:46:06.772860"
+}

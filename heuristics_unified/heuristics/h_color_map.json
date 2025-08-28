@@ -1,0 +1,32 @@
+{
+  "id": "h_color_map",
+  "name": "Direct Color Mapping",
+  "description": "Map each color in input to a specific color in output",
+  "pattern_type": "color_mapping",
+  "conditions": [
+    "consistent_color_transform",
+    "same_grid_size"
+  ],
+  "features": [],
+  "confidence": 0.5,
+  "transformation": {},
+  "transformations": [
+    "color_replace"
+  ],
+  "code_snippet": "",
+  "success_rate": 0.0,
+  "usage_count": 1,
+  "successful_applications": [],
+  "created_at": "2025-08-27T18:40:40.984222",
+  "updated_at": "2025-08-27T20:47:18.917904",
+  "tags": [
+    "basic",
+    "color"
+  ],
+  "complexity": 1,
+  "examples": [],
+  "_metadata": {
+    "version": "1.0",
+    "last_updated": "2025-08-27T20:47:18.917904"
+  }
+}

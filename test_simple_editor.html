@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple Puzzle Test</title>
+    <style>
+        body { 
+            font-family: Arial; 
+            background: #1a1a1a; 
+            color: white; 
+            padding: 20px; 
+        }
+        .grid-container {
+            display: inline-block;
+            margin: 10px;
+            padding: 10px;
+            background: #2a2a2a;
+            border-radius: 8px;
+        }
+        .puzzle-grid {
+            display: inline-block;
+            border: 2px solid #555;
+        }
+        .grid-row { 
+            display: flex; 
+        }
+        .grid-cell { 
+            width: 20px; 
+            height: 20px; 
+            border: 1px solid #333; 
+        }
+        .color-0 { background: #000000; }
+        .color-1 { background: #0074D9; }
+        .color-2 { background: #FF4136; }
+        .color-3 { background: #2ECC40; }
+        .color-4 { background: #FFDC00; }
+        .color-5 { background: #AAAAAA; }
+        .color-6 { background: #F012BE; }
+        .color-7 { background: #FF851B; }
+        .color-8 { background: #7FDBFF; }
+        .color-9 { background: #870C25; }
+        .status { 
+            padding: 10px; 
+            background: #333; 
+            margin: 10px 0; 
+            border-radius: 4px;
+        }
+        .error { color: #ff4444; }
+        .success { color: #44ff44; }
+    </style>
+</head>
+<body>
+    <h1>Simple Puzzle Loading Test</h1>
+    <div id="status" class="status">Initializing...</div>
+    <div id="puzzle-info"></div>
+    <div id="grids-container"></div>
+    
+    <script>
+        let currentPuzzle = null;
+        
+        async function loadAndDisplayPuzzle() {
+            const statusDiv = document.getElementById('status');
+            const infoDiv = document.getElementById('puzzle-info');
+            const gridsDiv = document.getElementById('grids-container');
+            
+            try {
+                statusDiv.textContent = 'Fetching puzzle from API...';
+                
+                const response = await fetch('/api/puzzle/current');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const data = await response.json();
+                console.log('API Response:', data);
+                
+                if (!data || !data.puzzle) {
+                    throw new Error('No puzzle in response');
+                }
+                
+                currentPuzzle = data.puzzle;
+                statusDiv.innerHTML = '<span class="success">✓ Puzzle loaded successfully!</span>';
+                
+                // Display puzzle info
+                infoDiv.innerHTML = `
+                    <h2>Puzzle: ${currentPuzzle.id || 'Unknown'}</h2>
+                    <p>Position: ${data.position ? data.position[0] + ' of ' + data.position[1] : 'Unknown'}</p>
+                `;
+                
+                // Clear previous grids
+                gridsDiv.innerHTML = '';
+                
+                // Display training examples
+                if (currentPuzzle.train && currentPuzzle.train.length > 0) {
+                    const trainHeader = document.createElement('h3');
+                    trainHeader.textContent = 'Training Examples:';
+                    gridsDiv.appendChild(trainHeader);
+                    
+                    currentPuzzle.train.forEach((example, idx) => {
+                        const pairDiv = document.createElement('div');
+                        pairDiv.style.marginBottom = '20px';
+                        
+                        const label = document.createElement('h4');
+                        label.textContent = `Example ${idx + 1}:`;
+                        pairDiv.appendChild(label);
+                        
+                        const gridsRow = document.createElement('div');
+                        gridsRow.style.display = 'flex';
+                        gridsRow.style.alignItems = 'center';
+                        
+                        // Input grid
+                        const inputContainer = createGridElement('Input', example.input);
+                        gridsRow.appendChild(inputContainer);
+                        
+                        // Arrow
+                        const arrow = document.createElement('span');
+                        arrow.textContent = ' → ';
+                        arrow.style.margin = '0 20px';
+                        arrow.style.fontSize = '24px';
+                        gridsRow.appendChild(arrow);
+                        
+                        // Output grid
+                        const outputContainer = createGridElement('Output', example.output);
+                        gridsRow.appendChild(outputContainer);
+                        
+                        pairDiv.appendChild(gridsRow);
+                        gridsDiv.appendChild(pairDiv);
+                    });
+                } else {
+                    gridsDiv.innerHTML = '<p>No training examples found</p>';
+                }
+                
+                // Display test input
+                if (currentPuzzle.test && currentPuzzle.test[0] && currentPuzzle.test[0].input) {
+                    const testHeader = document.createElement('h3');
+                    testHeader.textContent = 'Test Input:';
+                    gridsDiv.appendChild(testHeader);
+                    
+                    const testContainer = createGridElement('Test Input', currentPuzzle.test[0].input);
+                    gridsDiv.appendChild(testContainer);
+                }
+                
+            } catch (error) {
+                console.error('Error:', error);
+                statusDiv.innerHTML = `<span class="error">✗ Error: ${error.message}</span>`;
+                
+                // Try to load a default puzzle
+                loadDefaultPuzzle();
+            }
+        }
+        
+        function createGridElement(label, grid) {
+            const container = document.createElement('div');
+            container.className = 'grid-container';
+            
+            const labelDiv = document.createElement('div');
+            labelDiv.textContent = `${label} (${grid.length}×${grid[0]?.length || 0})`;
+            labelDiv.style.marginBottom = '5px';
+            labelDiv.style.fontSize = '12px';
+            labelDiv.style.color = '#999';
+            container.appendChild(labelDiv);
+            
+            const gridDiv = document.createElement('div');
+            gridDiv.className = 'puzzle-grid';
+            
+            grid.forEach(row => {
+                const rowDiv = document.createElement('div');
+                rowDiv.className = 'grid-row';
+                
+                row.forEach(cell => {
+                    const cellDiv = document.createElement('div');
+                    cellDiv.className = `grid-cell color-${cell}`;
+                    rowDiv.appendChild(cellDiv);
+                });
+                
+                gridDiv.appendChild(rowDiv);
+            });
+            
+            container.appendChild(gridDiv);
+            return container;
+        }
+        
+        function loadDefaultPuzzle() {
+            const gridsDiv = document.getElementById('grids-container');
+            const statusDiv = document.getElementById('status');
+            
+            statusDiv.innerHTML = '<span class="error">Loading default puzzle...</span>';
+            
+            currentPuzzle = {
+                id: 'default_test',
+                train: [
+                    {
+                        input: [[1, 0, 0], [0, 2, 0], [0, 0, 3]],
+                        output: [[3, 0, 0], [0, 2, 0], [0, 0, 1]]
+                    }
+                ],
+                test: [
+                    {
+                        input: [[4, 0, 0], [0, 5, 0], [0, 0, 6]]
+                    }
+                ]
+            };
+            
+            // Display the default puzzle
+            const infoDiv = document.getElementById('puzzle-info');
+            infoDiv.innerHTML = '<h2>Default Test Puzzle</h2>';
+            
+            gridsDiv.innerHTML = '<h3>Default Puzzle (API Failed):</h3>';
+            const inputGrid = createGridElement('Input', currentPuzzle.train[0].input);
+            const outputGrid = createGridElement('Output', currentPuzzle.train[0].output);
+            gridsDiv.appendChild(inputGrid);
+            gridsDiv.appendChild(outputGrid);
+        }
+        
+        // Load puzzle when page loads
+        window.addEventListener('DOMContentLoaded', () => {
+            console.log('Page loaded, fetching puzzle...');
+            loadAndDisplayPuzzle();
+        });
+    </script>
+</body>
+</html>

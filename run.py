@@ -105,7 +105,7 @@ class ARCLauncher:
     def test_backend(self):
         """Test if backend is responding"""
         try:
-            req = urllib.request.Request("http://localhost:8050/api/test")
+            req = urllib.request.Request("http://localhost:8050/api/status")
             with urllib.request.urlopen(req, timeout=5) as response:
                 return response.status == 200
         except:
@@ -117,13 +117,13 @@ class ARCLauncher:
         self.logger.info("Starting backend server...")
         
         try:
-            # Use the enhanced ARC app as backend
-            print("Starting backend server on port 8050...")
+            # Use the integrated ARC app with dashboard as backend
+            print("Starting backend server with dashboard on port 8050...")
             
             # Write to log file
             with open(self.backend_log_file, 'w') as log_file:
                 self.backend_process = subprocess.Popen(
-                    [python_exe, "arc_app_enhanced.py"],
+                    [python_exe, "arc_integrated_app.py"],
                     cwd=str(self.base_dir),
                     stdout=log_file,
                     stderr=subprocess.STDOUT,
