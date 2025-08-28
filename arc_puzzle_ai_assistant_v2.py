@@ -10,8 +10,10 @@ from typing import Dict, List, Optional, Tuple, Any
 from dataclasses import dataclass
 import boto3
 import os
+import asyncio
 from arc_unified_heuristics import unified_heuristics as heuristics_manager
 from arc_verification_oracle import verification_oracle
+from arc_claude_code_integration import ClaudeCodeDialogue
 
 @dataclass
 class GridCommand:
@@ -95,6 +97,10 @@ Be concise but thorough. Execute functions to get real data, don't guess."""
         except Exception as e:
             print(f"Bedrock initialization failed: {e}")
             self.bedrock_available = False
+        
+        # Initialize Claude Code integration
+        self.claude_dialogue = ClaudeCodeDialogue()
+        self.claude_dialogue.simulate_mode = False  # Use actual Claude Code
     
     def set_puzzle(self, puzzle: Dict):
         """Set the current puzzle context"""
@@ -412,6 +418,20 @@ Be concise but thorough. Execute functions to get real data, don't guess."""
                 )
                 return result
             
+            # Claude Code tool generation
+            elif function_name == "generate_tool_with_claude":
+                tool_desc = parameters.get('description', '')
+                tool_name = parameters.get('name', 'new_tool')
+                return self._generate_tool_with_claude(tool_desc, tool_name)
+            
+            elif function_name == "list_generated_tools":
+                return self._list_generated_tools()
+            
+            elif function_name == "invoke_generated_tool":
+                tool_name = parameters.get('tool_name')
+                tool_params = parameters.get('parameters', {})
+                return self._invoke_generated_tool(tool_name, tool_params)
+            
             # Get information
             elif function_name == "get_cell_color":
                 grid_type = parameters.get('grid_type', 'output')
@@ -566,6 +586,132 @@ Be concise but thorough. Execute functions to get real data, don't guess."""
         else:
             return {
                 "message": "Basic mode: I can help with grid sizes, heuristic counts, and pattern analysis. For advanced features, Bedrock connection is required."
+            }
+    
+    def _generate_tool_with_claude(self, description: str, tool_name: str) -> Dict:
+        """Generate a new tool using Claude Code"""
+        # Create prompt for Claude Code
+        prompt = f"""Create a new Python tool file called 'arc_generated_{tool_name}.py' that:
+
+{description}
+
+The tool should:
+1. Be a reusable component for the ARC AGI system
+2. Include proper docstrings and type hints
+3. Have error handling for edge cases
+4. Include test functions to verify it works
+5. Follow Python best practices
+
+Make it integrate well with the existing ARC AGI puzzle solving system."""
+        
+        # Run asynchronously
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        
+        try:
+            result = loop.run_until_complete(
+                self.claude_dialogue.invoke_claude(prompt)
+            )
+            
+            if result['status'] == 'completed':
+                # Try to import the generated tool
+                from pathlib import Path
+                tool_file = Path(f"arc_generated_{tool_name}.py")
+                
+                if tool_file.exists():
+                    return {
+                        "success": True,
+                        "message": f"Tool '{tool_name}' generated successfully",
+                        "file_path": str(tool_file),
+                        "response": result.get('response', '')[:500]
+                    }
+                else:
+                    return {
+                        "success": False,
+                        "message": "Tool generation completed but file not found",
+                        "response": result.get('response', '')
+                    }
+            else:
+                return {
+                    "success": False,
+                    "message": f"Tool generation failed: {result.get('response', 'Unknown error')}"
+                }
+        except Exception as e:
+            return {
+                "success": False,
+                "message": f"Error generating tool: {str(e)}"
+            }
+        finally:
+            loop.close()
+    
+    def _list_generated_tools(self) -> Dict:
+        """List all generated tools"""
+        from pathlib import Path
+        import glob
+        
+        # Find all generated tool files
+        tool_files = glob.glob("arc_generated_*.py")
+        tools = []
+        
+        for file in tool_files:
+            tool_name = file.replace("arc_generated_", "").replace(".py", "")
+            tools.append({
+                "name": tool_name,
+                "file": file,
+                "path": str(Path(file).absolute())
+            })
+        
+        return {
+            "tools": tools,
+            "count": len(tools),
+            "message": f"Found {len(tools)} generated tools"
+        }
+    
+    def _invoke_generated_tool(self, tool_name: str, parameters: Dict) -> Dict:
+        """Invoke a generated tool"""
+        from pathlib import Path
+        import importlib.util
+        
+        tool_file = Path(f"arc_generated_{tool_name}.py")
+        
+        if not tool_file.exists():
+            # Check if it's the Fibonacci tool
+            if tool_name == "fibonacci":
+                tool_file = Path("arc_fibonacci_tool.py")
+            else:
+                return {"error": f"Tool '{tool_name}' not found"}
+        
+        try:
+            # Import the tool module
+            spec = importlib.util.spec_from_file_location(f"arc_generated_{tool_name}", tool_file)
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+            
+            # Try to find and execute the main function or class
+            if hasattr(module, 'execute'):
+                result = module.execute(**parameters)
+            elif hasattr(module, 'main'):
+                result = module.main(**parameters)
+            elif hasattr(module, tool_name):
+                func = getattr(module, tool_name)
+                result = func(**parameters)
+            else:
+                # Look for the first callable
+                for name, obj in module.__dict__.items():
+                    if callable(obj) and not name.startswith('_'):
+                        result = obj(**parameters)
+                        break
+                else:
+                    return {"error": f"No executable function found in tool '{tool_name}'"}
+            
+            return {
+                "success": True,
+                "result": str(result),
+                "tool": tool_name
+            }
+        except Exception as e:
+            return {
+                "error": f"Error executing tool '{tool_name}': {str(e)}"
             }
 
 # Create a wrapper class that's compatible with the existing system
