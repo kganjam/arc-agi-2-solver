@@ -124,9 +124,17 @@ Be concise but thorough. Execute functions to get real data, don't guess."""
     
     def process_command(self, user_input: str) -> Dict:
         """Process user command with enhanced AI"""
+        
+        # Try basic processing first for common requests
+        # This avoids Bedrock for simple queries that we can handle directly
+        basic_result = self._basic_process(user_input)
+        if basic_result and "Basic mode:" not in basic_result.get("message", ""):
+            # Basic processing handled the request
+            return basic_result
+        
+        # If Bedrock is not available, return the basic result
         if not self.bedrock_available:
-            # Fallback to basic processing
-            return self._basic_process(user_input)
+            return basic_result
         
         try:
             # Use enhanced Bedrock processing with function execution
@@ -134,7 +142,8 @@ Be concise but thorough. Execute functions to get real data, don't guess."""
             return response
         except Exception as e:
             print(f"AI processing error: {e}")
-            return {
+            # Fall back to basic result if Bedrock fails
+            return basic_result if basic_result else {
                 "error": str(e),
                 "message": "An error occurred processing your request"
             }
@@ -600,26 +609,52 @@ Be concise but thorough. Execute functions to get real data, don't guess."""
     def _basic_process(self, user_input: str) -> Dict:
         """Basic processing without Bedrock"""
         # Simple pattern matching for common requests
-        user_input = user_input.lower().strip()
+        user_input_lower = user_input.lower().strip()
         
-        if "grid size" in user_input or "what size" in user_input:
+        # Handle fibonacci requests directly
+        if "fibonacci" in user_input_lower:
+            import re
+            # Try to extract number from various formats
+            match = re.search(r'fibonacci\((\d+)\)', user_input_lower)
+            if not match:
+                match = re.search(r'(\d+)(?:th|st|nd|rd)?\s+fibonacci', user_input_lower)
+            if not match:
+                match = re.search(r'fibonacci.*?(\d+)', user_input_lower)
+            
+            if match:
+                n = int(match.group(1))
+                result = self.execute_function(
+                    "invoke_generated_tool",
+                    {"tool_name": "fibonacci", "parameters": {"n": n}}
+                )
+                if result.get('success'):
+                    return {
+                        "message": f"fibonacci({n}) = {result['result']}",
+                        "function_results": [{"function": "fibonacci", "result": result}]
+                    }
+                else:
+                    return {"message": f"Error calculating fibonacci({n}): {result.get('error', 'Unknown error')}"}
+            else:
+                return {"message": "Please specify which fibonacci number you want (e.g., 'fibonacci(20)' or '20th fibonacci number')"}
+        
+        elif "grid size" in user_input_lower or "what size" in user_input_lower:
             if self.output_grid:
                 return {
                     "message": f"Output grid size: {len(self.output_grid)}x{len(self.output_grid[0])}"
                 }
             return {"message": "No output grid loaded"}
         
-        elif "heuristic" in user_input and "count" in user_input:
+        elif "heuristic" in user_input_lower and "count" in user_input_lower:
             count = len(heuristics_manager.heuristics)
             return {"message": f"There are {count} heuristics available"}
         
-        elif "analyze" in user_input:
+        elif "analyze" in user_input_lower:
             analysis = self._analyze_pattern_detailed()
             return {"message": json.dumps(analysis, indent=2)}
         
         else:
             return {
-                "message": "Basic mode: I can help with grid sizes, heuristic counts, and pattern analysis. For advanced features, Bedrock connection is required."
+                "message": "Basic mode: I can help with grid sizes, heuristic counts, pattern analysis, and fibonacci calculations. For advanced features, Bedrock connection is required."
             }
     
     def _generate_tool_with_claude(self, description: str, tool_name: str) -> Dict:
