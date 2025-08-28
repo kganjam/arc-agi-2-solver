@@ -6,6 +6,10 @@
 - **Key Principle**: ARC AGI measures general intelligence through skill acquisition efficiency, not brute force
 - **Timeline**: March 26 - November 3, 2025
 - **Requirement**: Solutions must demonstrate genuine pattern learning, not memorization
+- **Prize Structure**: $1M+ total ($700K grand prize, $75K paper awards, $50K top scores)
+- **Benchmark**: ARC-AGI-2 uses same format as ARC-AGI-1 but resistant to brute force
+- **Color System**: 10 colors (0-9) for grid cells
+- **Puzzle Format**: Given training examples with input/output pairs, identify pattern and solve test case
 
 ## System Overview
 Build a comprehensive meta-learning system for solving ARC AGI 2 challenges that can generate synthetic training data, learn from experience, and automatically improve its solving capabilities while strictly adhering to competition rules.
@@ -24,10 +28,80 @@ Build a comprehensive meta-learning system for solving ARC AGI 2 challenges that
 ### Proper ARC AGI Solving Methodology
 1. Load puzzle with train/test structure
 2. Analyze ALL training input/output pairs
+   - Consider grid size changes (input vs output dimensions)
+   - Identify color transformations and mappings
+   - Detect spatial transformations (rotation, reflection, translation)
+   - Look for pattern-based rules (symmetry, repetition, completion)
+   - Check for object manipulation (extraction, counting, movement)
 3. Learn transformation pattern from examples
-4. Validate hypothesis on training data
+4. Validate hypothesis on ALL training data (must achieve 80%+ accuracy)
 5. Only then apply to test input
-6. Check solution correctness
+6. Verify solution with oracle:
+   - Check grid dimensions match expected
+   - Validate cell-by-cell accuracy
+   - Ensure solution differs from input (no trivial copying)
+7. Use AI assistance for pattern recognition:
+   - Integrate AWS Bedrock for puzzle analysis
+   - Get AI suggestions for transformation approach
+   - Validate AI suggestions against training data
+
+## Common ARC Puzzle Patterns and Solving Strategies
+
+### Pattern Categories
+1. **Grid Size Transformations**
+   - Cropping: Output is subset of input (identify region to extract)
+   - Padding: Output larger than input (identify padding pattern and value)
+   - Scaling: Output is scaled version of input (identify scale factor)
+   - Tiling: Output repeats input pattern
+
+2. **Color Transformations**
+   - Direct mapping: Each color maps to another consistently
+   - Conditional mapping: Color changes based on context/neighbors
+   - Binary operations: Colors combined using AND/OR/XOR logic
+   - Masking: Certain colors act as masks for transformations
+
+3. **Spatial Transformations**
+   - Rotation: 90°, 180°, 270° rotations
+   - Reflection: Horizontal, vertical, or diagonal flips
+   - Translation: Shifting patterns within grid
+   - Symmetry completion: Making grid symmetric
+
+4. **Object-Based Transformations**
+   - Object extraction: Identify and isolate specific shapes
+   - Object counting: Output depends on number of objects
+   - Object movement: Move shapes to new positions
+   - Object transformation: Change shape properties
+
+5. **Pattern-Based Rules**
+   - Line extension: Extend lines to grid boundaries
+   - Pattern completion: Fill in missing parts of patterns
+   - Connectivity: Connect related components
+   - Boundary detection: Identify and mark edges
+
+### Solving Strategy Workflow
+1. **Initial Analysis**
+   - Compare all input/output grid dimensions
+   - Count unique colors in inputs vs outputs
+   - Check for obvious transformations (rotation, flip)
+   - Look for consistent patterns across examples
+
+2. **Hypothesis Generation**
+   - Start with simplest transformation that fits
+   - Consider grid size changes first
+   - Then color mappings
+   - Then spatial transformations
+   - Finally complex pattern rules
+
+3. **Validation Process**
+   - Test hypothesis on ALL training examples
+   - Require 100% accuracy for simple transformations
+   - Require 80%+ for complex patterns
+   - If validation fails, generate new hypothesis
+
+4. **Solution Application**
+   - Apply validated transformation to test input
+   - Consider edge cases and boundary conditions
+   - Verify output makes sense (not identical to input)
 
 ## Core Requirements
 
