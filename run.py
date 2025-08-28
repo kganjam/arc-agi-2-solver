@@ -135,27 +135,57 @@ class ARCLauncher:
             except:
                 pass
             
-            # Use start_backend.py for better stability
+            # Try different startup methods
             print("Starting backend server with dashboard on port 8050...")
             
-            # Write to log file
-            with open(self.backend_log_file, 'w') as log_file:
-                self.backend_process = subprocess.Popen(
-                    [python_exe, "start_backend.py"],
-                    cwd=str(self.base_dir),
-                    stdout=log_file,
-                    stderr=subprocess.STDOUT,
-                    text=True
-                )
+            # First try the direct startup
+            startup_script = "start_direct.py"
+            if not os.path.exists(os.path.join(self.base_dir, startup_script)):
+                startup_script = "start_backend.py"
+            
+            print(f"Using startup script: {startup_script}")
+            
+            # Start backend process without file redirection for better debugging
+            self.backend_process = subprocess.Popen(
+                [python_exe, startup_script],
+                cwd=str(self.base_dir),
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True
+            )
             
             self.logger.info(f"Backend started with PID: {self.backend_process.pid}")
             self.logger.info(f"Backend logs: {self.backend_log_file}")
             
             # Wait longer for backend to initialize (it needs time)
             print("Waiting for backend to initialize", end="")
-            for i in range(15):  # Try for up to 15 seconds
+            
+            # Start a thread to read output
+            import threading
+            def read_output():
+                try:
+                    for line in iter(self.backend_process.stdout.readline, ''):
+                        if line:
+                            print(f"\n  Backend: {line.strip()}")
+                except:
+                    pass
+            
+            output_thread = threading.Thread(target=read_output, daemon=True)
+            output_thread.start()
+            
+            for i in range(20):  # Try for up to 20 seconds
                 time.sleep(1)
                 print(".", end="", flush=True)
+                
+                # Check if process died
+                if self.backend_process.poll() is not None:
+                    print("\n✗ Backend process died")
+                    # Get error output
+                    stderr = self.backend_process.stderr.read()
+                    if stderr:
+                        print(f"Error output:\n{stderr}")
+                    return False
+                
                 if self.test_backend():
                     print("\n✓ Backend started successfully")
                     print("  URL: http://localhost:8050")
@@ -163,19 +193,7 @@ class ARCLauncher:
                     return True
             
             print("\n✗ Backend started but not responding")
-            self.logger.error("Backend not responding to health check after 15 seconds")
-            
-            # Check if process is still running
-            if self.backend_process.poll() is not None:
-                print("✗ Backend process died")
-                self.logger.error("Backend process died")
-                # Try to read some log output for debugging
-                try:
-                    with open(self.backend_log_file, 'r') as f:
-                        last_lines = f.read()[-1000:]  # Last 1000 chars
-                        print(f"Last log output:\n{last_lines}")
-                except:
-                    pass
+            self.logger.error("Backend not responding to health check after 20 seconds")
             return False
                 
         except Exception as e:

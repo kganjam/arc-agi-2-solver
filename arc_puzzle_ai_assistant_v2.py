@@ -125,15 +125,10 @@ You can chain multiple functions. Be aggressive in trying solutions!"""
                     service_name='bedrock-runtime',
                     region_name=os.environ.get('AWS_DEFAULT_REGION', 'us-east-1')
                 )
-                # Test the connection
-                try:
-                    self.bedrock.list_foundation_models(maxResults=1)
-                    self.bedrock_available = True
-                    self.model_id = 'anthropic.claude-3-sonnet-20240229-v1:0'
-                    print("✅ Bedrock connection successful")
-                except Exception as e:
-                    print(f"⚠️ Bedrock authentication failed: {e}")
-                    self.bedrock_available = False
+                # Skip connection test - just try to use it when needed
+                self.bedrock_available = True
+                self.model_id = 'anthropic.claude-3-sonnet-20240229-v1:0'
+                print("✅ Bedrock client initialized (will test on first use)")
         except Exception as e:
             print(f"⚠️ Bedrock initialization failed: {e}")
             self.bedrock_available = False
