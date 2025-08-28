@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Thinking Indicator</title>
+    <style>
+        body {
+            background: #1a1a1a;
+            color: #fff;
+            font-family: sans-serif;
+            padding: 20px;
+        }
+        
+        .chat-messages {
+            background: #2a2a2a;
+            padding: 15px;
+            border-radius: 8px;
+            height: 400px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+        }
+        
+        .chat-message {
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+        
+        .chat-message.user {
+            background: #444;
+            text-align: right;
+        }
+        
+        .chat-message.ai {
+            background: #333;
+        }
+        
+        /* Thinking indicator */
+        .thinking-indicator {
+            display: none;
+            padding: 10px;
+            background: #2a2a2a;
+            border-radius: 6px;
+            color: #999;
+            font-style: italic;
+            animation: pulse 1.5s infinite;
+            margin-top: 10px;
+        }
+        
+        .thinking-indicator.active {
+            display: block;
+        }
+        
+        .thinking-dots::after {
+            content: '...';
+            animation: dots 1.5s steps(3, end) infinite;
+            display: inline-block;
+            width: 20px;
+            text-align: left;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+        
+        @keyframes dots {
+            0% { content: '.'; }
+            33% { content: '..'; }
+            66% { content: '...'; }
+            100% { content: '.'; }
+        }
+        
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        
+        button:hover {
+            background: #45a049;
+        }
+        
+        .status {
+            margin-top: 20px;
+            padding: 10px;
+            background: #333;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test Thinking Indicator</h1>
+    
+    <div class="chat-messages" id="chat-messages">
+        <div class="chat-message ai">
+            Click the buttons below to test the thinking indicator
+        </div>
+        <div class="thinking-indicator" id="thinking-indicator">
+            🤔 AI is thinking<span class="thinking-dots"></span>
+        </div>
+    </div>
+    
+    <div>
+        <button onclick="testThinking()">Test Thinking (3 seconds)</button>
+        <button onclick="showThinkingIndicator()">Show Indicator</button>
+        <button onclick="hideThinkingIndicator()">Hide Indicator</button>
+        <button onclick="simulateChat()">Simulate Chat</button>
+    </div>
+    
+    <div class="status" id="status">
+        Status: Ready
+    </div>
+    
+    <script>
+        function showThinkingIndicator() {
+            console.log('Showing thinking indicator...');
+            const indicator = document.getElementById('thinking-indicator');
+            if (indicator) {
+                indicator.classList.add('active');
+                document.getElementById('status').textContent = 'Status: Thinking indicator is visible';
+                
+                // Scroll to show indicator
+                const chatMessages = document.getElementById('chat-messages');
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            } else {
+                console.error('Thinking indicator element not found!');
+                document.getElementById('status').textContent = 'Status: ERROR - Indicator not found!';
+            }
+        }
+        
+        function hideThinkingIndicator() {
+            console.log('Hiding thinking indicator...');
+            const indicator = document.getElementById('thinking-indicator');
+            if (indicator) {
+                indicator.classList.remove('active');
+                document.getElementById('status').textContent = 'Status: Thinking indicator is hidden';
+            }
+        }
+        
+        function addChatMessage(message, sender = 'ai') {
+            const chatMessages = document.getElementById('chat-messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `chat-message ${sender}`;
+            messageDiv.textContent = message;
+            
+            // Insert before thinking indicator
+            const indicator = document.getElementById('thinking-indicator');
+            chatMessages.insertBefore(messageDiv, indicator);
+            
+            // Scroll to bottom
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+        
+        function testThinking() {
+            document.getElementById('status').textContent = 'Status: Starting 3-second test...';
+            
+            // Show indicator
+            showThinkingIndicator();
+            
+            // Hide after 3 seconds
+            setTimeout(() => {
+                hideThinkingIndicator();
+                addChatMessage('Test completed! The thinking indicator should have been visible for 3 seconds.');
+                document.getElementById('status').textContent = 'Status: Test completed';
+            }, 3000);
+        }
+        
+        function simulateChat() {
+            // Add user message
+            addChatMessage('Tell me about ARC puzzles', 'user');
+            document.getElementById('status').textContent = 'Status: Simulating chat...';
+            
+            // Show thinking
+            showThinkingIndicator();
+            
+            // Simulate response after 2 seconds
+            setTimeout(() => {
+                hideThinkingIndicator();
+                addChatMessage('ARC puzzles are visual reasoning challenges that test pattern recognition and generalization abilities.');
+                document.getElementById('status').textContent = 'Status: Chat simulation completed';
+            }, 2000);
+        }
+        
+        // Test on load
+        window.onload = function() {
+            console.log('Page loaded. Testing indicator visibility...');
+            const indicator = document.getElementById('thinking-indicator');
+            if (indicator) {
+                console.log('✓ Thinking indicator found in DOM');
+                console.log('Initial display style:', window.getComputedStyle(indicator).display);
+                console.log('Has active class:', indicator.classList.contains('active'));
+            } else {
+                console.error('✗ Thinking indicator NOT found in DOM!');
+            }
+        };
+    </script>
+</body>
+</html>

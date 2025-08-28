@@ -856,17 +856,28 @@ from arc_puzzle_ai_assistant_v2 import PuzzleAIAssistant
 from arc_conversation_logger import conversation_logger
 
 # Progress callback for streaming AI messages
-async def stream_progress_to_client(message_data: Dict):
+def stream_progress_callback(message_data: Dict):
     """Stream progress messages to connected WebSocket clients"""
     try:
-        # Send to all puzzle-solving WebSocket connections
-        for client_id in list(manager.puzzle_solving_connections.keys()):
-            await manager.send_to_client(client_id, message_data)
+        # Create a task in the current event loop if it exists
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            # Send to all puzzle-solving WebSocket connections
+            async def send_messages():
+                for client_id in list(manager.puzzle_solving_connections.keys()):
+                    try:
+                        await manager.send_to_client(client_id, message_data)
+                    except Exception as e:
+                        print(f"Error sending to client {client_id}: {e}")
+            
+            asyncio.create_task(send_messages())
+        else:
+            print(f"No running event loop for progress message: {message_data.get('message', '')[:50]}")
     except Exception as e:
-        print(f"Error streaming progress: {e}")
+        print(f"Error in progress callback: {e}")
 
 # Global AI assistant instance with progress callback
-puzzle_ai = PuzzleAIAssistant(progress_callback=lambda msg: asyncio.create_task(stream_progress_to_client(msg)))
+puzzle_ai = PuzzleAIAssistant(progress_callback=stream_progress_callback)
 
 @app.get("/puzzle-editor")  
 async def puzzle_editor():

@@ -114,15 +114,30 @@ You can chain multiple functions. Be aggressive in trying solutions!"""
         
         # Initialize Bedrock client
         try:
-            self.bedrock = boto3.client(
-                service_name='bedrock-runtime',
-                region_name=os.environ.get('AWS_DEFAULT_REGION', 'us-east-1')
-            )
-            self.bedrock_available = True
-            self.model_id = 'anthropic.claude-3-sonnet-20240229-v1:0'
+            # Check for AWS credentials
+            if not os.environ.get('AWS_ACCESS_KEY_ID') and not os.environ.get('AWS_PROFILE'):
+                print("⚠️ AWS credentials not configured. Bedrock features disabled.")
+                print("  To enable Bedrock, set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY environment variables")
+                self.bedrock_available = False
+                self.bedrock = None
+            else:
+                self.bedrock = boto3.client(
+                    service_name='bedrock-runtime',
+                    region_name=os.environ.get('AWS_DEFAULT_REGION', 'us-east-1')
+                )
+                # Test the connection
+                try:
+                    self.bedrock.list_foundation_models(maxResults=1)
+                    self.bedrock_available = True
+                    self.model_id = 'anthropic.claude-3-sonnet-20240229-v1:0'
+                    print("✅ Bedrock connection successful")
+                except Exception as e:
+                    print(f"⚠️ Bedrock authentication failed: {e}")
+                    self.bedrock_available = False
         except Exception as e:
-            print(f"Bedrock initialization failed: {e}")
+            print(f"⚠️ Bedrock initialization failed: {e}")
             self.bedrock_available = False
+            self.bedrock = None
         
         # Initialize Claude Code integration
         self.claude_dialogue = ClaudeCodeDialogue()
@@ -181,6 +196,9 @@ You can chain multiple functions. Be aggressive in trying solutions!"""
             # Build context
             context = self._build_context()
             
+            # Send progress about starting Bedrock query
+            self._send_progress("🤖 Starting Bedrock AI query...", "bedrock_start")
+            
             # Start with just the current request
             messages = [
                 {
@@ -189,6 +207,9 @@ You can chain multiple functions. Be aggressive in trying solutions!"""
                 }
             ]
             
+            # Send the prompt being used
+            self._send_progress(f"📝 Prompt: {user_input[:200]}...", "bedrock_prompt")
+            
             # Process with function calling loop
             max_iterations = 3  # Reduced to prevent hanging
             final_response = ""
@@ -196,8 +217,14 @@ You can chain multiple functions. Be aggressive in trying solutions!"""
             
             for iteration in range(max_iterations):
                 try:
+                    # Send progress about Bedrock thinking
+                    self._send_progress(f"🧠 Bedrock thinking (iteration {iteration + 1}/{max_iterations})...", "bedrock_thinking")
+                    
                     # Query Bedrock with timeout
                     response_text = self._call_bedrock(messages)
+                    
+                    # Send Bedrock's response
+                    self._send_progress(f"💡 Bedrock response: {response_text[:300]}...", "bedrock_response")
                     
                     # Check for function calls
                     function_calls = self._extract_function_calls(response_text)
@@ -443,15 +470,20 @@ You can chain multiple functions. Be aggressive in trying solutions!"""
             elif function_name == "apply_heuristic":
                 h_id = parameters.get('heuristic_id')
                 if h_id:
+                    self._send_progress(f"📚 Retrieving heuristic: {h_id}", "heuristic_retrieval")
                     puzzle_data = self._get_puzzle_data()
+                    self._send_progress(f"🔧 Applying heuristic: {h_id}", "heuristic_application")
                     result = heuristics_manager.apply_heuristic(h_id, puzzle_data)
                     self.last_applied_heuristic = h_id
+                    self._send_progress(f"✅ Heuristic {h_id} applied successfully", "heuristic_success")
                     return result
                 return {"error": "No heuristic_id provided"}
             
             elif function_name == "create_heuristic":
+                name = parameters.get('name', 'New Heuristic')
+                self._send_progress(f"🆕 Creating new heuristic: {name}", "heuristic_creation")
                 h = heuristics_manager.create_heuristic(
-                    name=parameters.get('name', 'New Heuristic'),
+                    name=name,
                     description=parameters.get('description', ''),
                     pattern_type=parameters.get('pattern_type', 'unknown'),
                     conditions=parameters.get('conditions', []),
@@ -459,6 +491,7 @@ You can chain multiple functions. Be aggressive in trying solutions!"""
                     complexity=parameters.get('complexity', 1),
                     tags=parameters.get('tags', [])
                 )
+                self._send_progress(f"✅ Heuristic '{h.name}' created with ID: {h.id}", "heuristic_created")
                 return {
                     "success": True,
                     "heuristic_id": h.id,
@@ -504,7 +537,14 @@ You can chain multiple functions. Be aggressive in trying solutions!"""
             elif function_name == "generate_tool_with_claude":
                 tool_desc = parameters.get('description', '')
                 tool_name = parameters.get('name', 'new_tool')
-                return self._generate_tool_with_claude(tool_desc, tool_name)
+                self._send_progress(f"🛠️ Invoking Claude Code to create tool: {tool_name}", "tool_creation_start")
+                self._send_progress(f"📝 Tool description: {tool_desc[:100]}...", "tool_description")
+                result = self._generate_tool_with_claude(tool_desc, tool_name)
+                if result.get('success'):
+                    self._send_progress(f"✅ Tool '{tool_name}' created successfully!", "tool_created")
+                else:
+                    self._send_progress(f"❌ Failed to create tool: {result.get('message', 'Unknown error')}", "tool_creation_failed")
+                return result
             
             elif function_name == "list_generated_tools":
                 return self._list_generated_tools()
