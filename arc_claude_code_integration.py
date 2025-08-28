@@ -114,20 +114,24 @@ class ClaudeCodeDialogue:
             self.claude_code_path,
             "--print",  # Non-interactive mode
             "--allowedTools", self.allowed_tools,
-            "--permission-mode", self.permission_mode,
-            prompt  # Prompt as positional argument
+            "--permission-mode", self.permission_mode
         ]
         
         try:
-            # Run Claude Code command
+            # Run Claude Code command with prompt via stdin
             result = await asyncio.create_subprocess_exec(
                 *cmd,
+                stdin=asyncio.subprocess.PIPE,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
                 cwd=Path.cwd()
             )
             
-            stdout, stderr = await result.communicate()
+            # Send prompt via stdin and get response
+            stdout, stderr = await asyncio.wait_for(
+                result.communicate(input=prompt.encode('utf-8')),
+                timeout=30.0  # 30 second timeout
+            )
             
             if result.returncode == 0:
                 # Success - parse the output
