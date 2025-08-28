@@ -113,17 +113,35 @@ class ARCLauncher:
         
     def start_backend(self, python_exe):
         """Start the FastAPI backend"""
+        # Check if backend is already running
+        if self.test_backend():
+            self.print_header("Backend Already Running")
+            print("✓ Backend is already running on port 8050")
+            print("  URL: http://localhost:8050")
+            self.logger.info("Backend already running, skipping start")
+            return True
+            
         self.print_header("Starting Backend")
         self.logger.info("Starting backend server...")
         
         try:
-            # Use the integrated ARC app with dashboard as backend
+            # Kill any existing backend processes first
+            print("Cleaning up any existing backend processes...")
+            try:
+                subprocess.run(["pkill", "-f", "arc_integrated_app"], capture_output=True)
+                subprocess.run(["pkill", "-f", "start_backend"], capture_output=True)
+                subprocess.run(["pkill", "-f", "uvicorn"], capture_output=True)
+                time.sleep(2)  # Give processes time to die
+            except:
+                pass
+            
+            # Use start_backend.py for better stability
             print("Starting backend server with dashboard on port 8050...")
             
             # Write to log file
             with open(self.backend_log_file, 'w') as log_file:
                 self.backend_process = subprocess.Popen(
-                    [python_exe, "arc_integrated_app.py"],
+                    [python_exe, "start_backend.py"],
                     cwd=str(self.base_dir),
                     stdout=log_file,
                     stderr=subprocess.STDOUT,
@@ -133,24 +151,32 @@ class ARCLauncher:
             self.logger.info(f"Backend started with PID: {self.backend_process.pid}")
             self.logger.info(f"Backend logs: {self.backend_log_file}")
             
-            # Wait for backend to start
-            time.sleep(3)
-            
-            # Check if process is running and test endpoint
-            if self.backend_process.poll() is None:
+            # Wait longer for backend to initialize (it needs time)
+            print("Waiting for backend to initialize", end="")
+            for i in range(15):  # Try for up to 15 seconds
+                time.sleep(1)
+                print(".", end="", flush=True)
                 if self.test_backend():
-                    print("✓ Backend started successfully")
+                    print("\n✓ Backend started successfully")
                     print("  URL: http://localhost:8050")
                     self.logger.info("Backend is responding")
                     return True
-                else:
-                    print("✗ Backend started but not responding")
-                    self.logger.error("Backend not responding to health check")
-                    return False
-            else:
-                print("✗ Backend failed to start")
+            
+            print("\n✗ Backend started but not responding")
+            self.logger.error("Backend not responding to health check after 15 seconds")
+            
+            # Check if process is still running
+            if self.backend_process.poll() is not None:
+                print("✗ Backend process died")
                 self.logger.error("Backend process died")
-                return False
+                # Try to read some log output for debugging
+                try:
+                    with open(self.backend_log_file, 'r') as f:
+                        last_lines = f.read()[-1000:]  # Last 1000 chars
+                        print(f"Last log output:\n{last_lines}")
+                except:
+                    pass
+            return False
                 
         except Exception as e:
             print(f"✗ Failed to start backend: {e}")
@@ -224,12 +250,30 @@ class ARCLauncher:
             
     def monitor_processes(self):
         """Monitor backend process and restart if needed"""
+        backend_was_alive = True
         while self.running:
             try:
+                # First check if backend is responding on port 8050
+                if self.test_backend():
+                    # Backend is running fine
+                    if not backend_was_alive:
+                        print("\n✓ Backend is now responding")
+                        backend_was_alive = True
+                    time.sleep(5)
+                    continue
+                    
+                # Backend is not responding
+                backend_was_alive = False
+                    
+                # Only restart if we started the backend ourselves and it died
                 if self.backend_process and self.backend_process.poll() is not None:
                     print("\n⚠️  Backend process died, restarting...")
                     python_exe = self.get_python_executable()
                     self.start_backend(python_exe)
+                elif not self.backend_process:
+                    # No backend process tracked and backend not responding
+                    # Don't start a new one - it might be managed externally
+                    pass
                     
                 time.sleep(5)
             except:
@@ -268,10 +312,17 @@ class ARCLauncher:
             # Activate virtual environment
             python_exe = self.activate_venv()
             
-            # Start backend
-            if not self.start_backend(python_exe):
-                print("\n✗ Failed to start application")
-                return False
+            # Check if backend is already running before starting
+            if self.test_backend():
+                self.print_header("Backend Already Running")
+                print("✓ Backend is already running on port 8050")
+                print("  URL: http://localhost:8050")
+                self.logger.info("Backend already running, skipping start")
+            else:
+                # Start backend
+                if not self.start_backend(python_exe):
+                    print("\n✗ Failed to start application")
+                    return False
                 
             # Start frontend (served by backend in this case)
             self.start_frontend(python_exe)
