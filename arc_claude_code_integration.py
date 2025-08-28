@@ -11,6 +11,8 @@ from datetime import datetime
 from typing import Dict, List, Optional, Any
 import asyncio
 import hashlib
+import shutil
+import os
 
 class ClaudeCodeDialogue:
     """Manages dialogue with Claude Code"""
@@ -18,11 +20,13 @@ class ClaudeCodeDialogue:
     def __init__(self):
         self.conversations = []
         self.current_conversation = None
-        self.claude_code_path = "claude"
-        self.allowed_tools = "Bash,Read,Write,Edit,WebSearch"
+        # Find Claude Code command path
+        self.claude_code_path = shutil.which('claude') or '/home/kganjam/.nvm/versions/node/v22.18.0/bin/claude'
+        self.allowed_tools = "Bash,Read,Edit,MultiEdit,Write,WebSearch,WebFetch,Fetch"
         self.permission_mode = "acceptEdits"
         self.cost_per_call = 0.01
         self.total_cost = 0.0
+        self.simulate_mode = False  # Set to True to simulate responses for testing
         
     async def invoke_claude(self, prompt: str, context: Dict = None) -> Dict:
         """Invoke Claude Code with a prompt"""
@@ -51,11 +55,13 @@ class ClaudeCodeDialogue:
         ]
         
         try:
-            # Simulate Claude Code response for now
-            # In production, this would actually call Claude Code
-            await asyncio.sleep(2)  # Simulate processing time
-            
-            response = self._simulate_claude_response(prompt, context)
+            if self.simulate_mode:
+                # Simulate Claude Code response for testing
+                await asyncio.sleep(2)  # Simulate processing time
+                response = self._simulate_claude_response(prompt, context)
+            else:
+                # Actually invoke Claude Code
+                response = await self._invoke_claude_code(prompt)
             
             conversation['response'] = response
             conversation['status'] = 'completed'
@@ -70,6 +76,71 @@ class ClaudeCodeDialogue:
             conversation['status'] = 'error'
             conversation['response'] = f"Error: {str(e)}"
             return conversation
+    
+    async def _invoke_claude_code(self, prompt: str) -> str:
+        """Actually invoke Claude Code with the prompt"""
+        
+        # First commit any existing changes
+        try:
+            # Check if there are changes to commit
+            status_result = subprocess.run(
+                ['git', 'status', '--porcelain'],
+                capture_output=True,
+                text=True,
+                cwd=Path.cwd()
+            )
+            
+            if status_result.stdout.strip():
+                # There are changes, commit them
+                subprocess.run(
+                    ['git', 'add', '.'],
+                    capture_output=True,
+                    cwd=Path.cwd()
+                )
+                
+                commit_message = "Auto-commit before Claude Code updates"
+                subprocess.run(
+                    ['git', 'commit', '-m', commit_message],
+                    capture_output=True,
+                    cwd=Path.cwd()
+                )
+                print(f"Committed existing changes: {commit_message}")
+        except Exception as e:
+            print(f"Warning: Could not commit changes: {e}")
+        
+        # Build Claude Code command
+        cmd = [
+            self.claude_code_path,
+            "--allowedTools", self.allowed_tools,
+            "--permission-mode", self.permission_mode,
+            "--message", prompt
+        ]
+        
+        try:
+            # Run Claude Code command
+            result = await asyncio.create_subprocess_exec(
+                *cmd,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+                cwd=Path.cwd()
+            )
+            
+            stdout, stderr = await result.communicate()
+            
+            if result.returncode == 0:
+                # Success - parse the output
+                output = stdout.decode('utf-8')
+                # Claude Code typically outputs the result directly
+                return output
+            else:
+                # Error occurred
+                error_msg = stderr.decode('utf-8') if stderr else "Unknown error"
+                return f"Error invoking Claude Code: {error_msg}"
+                
+        except FileNotFoundError:
+            return f"Claude Code not found at {self.claude_code_path}. Please install Claude Code or update the path."
+        except Exception as e:
+            return f"Error invoking Claude Code: {str(e)}"
     
     def _simulate_claude_response(self, prompt: str, context: Dict) -> str:
         """Simulate Claude Code response for testing"""
