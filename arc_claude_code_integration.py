@@ -118,6 +118,9 @@ class ClaudeCodeDialogue:
         ]
         
         try:
+            print(f"Debug: Executing command: {' '.join(cmd)}")
+            print(f"Debug: Prompt length: {len(prompt)} chars")
+            
             # Run Claude Code command with prompt via stdin
             result = await asyncio.create_subprocess_exec(
                 *cmd,
@@ -133,14 +136,20 @@ class ClaudeCodeDialogue:
                 timeout=30.0  # 30 second timeout
             )
             
+            print(f"Debug: Return code: {result.returncode}")
+            print(f"Debug: Stdout length: {len(stdout)} bytes")
+            print(f"Debug: Stderr length: {len(stderr)} bytes")
+            
             if result.returncode == 0:
                 # Success - parse the output
-                output = stdout.decode('utf-8')
+                output = stdout.decode('utf-8').strip()
+                print(f"Debug: Output: {output[:200]}..." if len(output) > 200 else f"Debug: Output: {output}")
                 # Claude Code typically outputs the result directly
-                return output
+                return output if output else "Claude Code executed successfully (no output)"
             else:
                 # Error occurred
                 error_msg = stderr.decode('utf-8') if stderr else "Unknown error"
+                print(f"Debug: Error: {error_msg}")
                 return f"Error invoking Claude Code: {error_msg}"
                 
         except FileNotFoundError:
